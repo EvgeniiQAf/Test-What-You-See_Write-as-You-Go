@@ -1,0 +1,10 @@
+node_modules
+.env
+.env.local
+dist
+logs
+*.log
+.DS_Store
+.vscode
+test-openai.js
+testmo-draft-*.json
