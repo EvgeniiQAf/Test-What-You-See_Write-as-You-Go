@@ -2,6 +2,11 @@ import { GenerateTestCasesInput } from "../validations/generate.validation";
 import { inferRequestedCount } from "./testcase-counts";
 import { MAX_TEST_CASES } from "./testcase.constants";
 import { isSingleComprehensiveRequest, normalizeScreenTitle } from "./testcase-context";
+import {
+  buildPreferenceNotesContext,
+  buildSelectedElementsContext,
+  buildUiLabelContext,
+} from "./testcase-prompt-context";
 
 export { MAX_TEST_CASES } from "./testcase.constants";
 
@@ -18,28 +23,9 @@ export const buildTestCasePrompt = (input: GenerateTestCasesInput): string => {
     .map((item) => `${item.role.toUpperCase()}: ${item.content}`)
     .join("\n");
   const preferenceProfile = input.preferenceProfile || {};
-  const preferenceNotes = (preferenceProfile.notes || [])
-    .map((note) => String(note || "").trim())
-    .filter(Boolean)
-    .slice(0, 5);
-  const uiLabelContext = [
-    `selectedText: ${input.selectedText || "N/A"}`,
-    `elementLabel: ${input.elementLabel || "N/A"}`,
-    `ariaLabel: ${input.ariaLabel || "N/A"}`,
-    `placeholder: ${input.placeholder || "N/A"}`,
-    `elementTag: ${input.elementTag || "N/A"}`,
-  ].join("\n");
-  const selectedElements = Array.isArray((input as any).selectedElements) ? (input as any).selectedElements : [];
-  const selectedElementsContext = selectedElements.length > 0
-    ? selectedElements
-      .map((item: any, index: number) => {
-        const label = String(item?.text || item?.ariaLabel || item?.placeholder || "Element selected").trim();
-        const tag = String(item?.tag || "element").trim();
-        const screen = String(item?.pageTitle || input.pageTitle || "N/A").trim();
-        return `${index + 1}. ${tag}: ${label} [${screen}]`;
-      })
-      .join("\n")
-    : "N/A";
+  const preferenceNotes = buildPreferenceNotesContext(input);
+  const uiLabelContext = buildUiLabelContext(input);
+  const selectedElementsContext = buildSelectedElementsContext(input);
 
   return `
 Generate QA test cases for the selected UI element in two languages: Ukrainian and English.
@@ -128,7 +114,7 @@ Preference profile rules:
 - If notes are present, apply them as short style constraints.
 
 Preference notes:
-${preferenceNotes.length > 0 ? preferenceNotes.map((note) => `- ${note}`).join("\n") : "- N/A"}
+${preferenceNotes}
 
 Development rules:
 - Do not invent business logic that is not visible in the UI, HTML, or user notes.
