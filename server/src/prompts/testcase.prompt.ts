@@ -1,17 +1,9 @@
 import { GenerateTestCasesInput } from "../validations/generate.validation";
 import { inferRequestedCount } from "./testcase-counts";
 import { MAX_TEST_CASES } from "./testcase.constants";
+import { isSingleComprehensiveRequest, normalizeScreenTitle } from "./testcase-context";
 
 export { MAX_TEST_CASES } from "./testcase.constants";
-
-const normalizeScreenTitle = (value: string): string => {
-  return String(value || "")
-    .replace(/\s*[-|]\s*TripLink\s*$/i, "")
-    .replace(/^TripLink\s*[-|]\s*/i, "")
-    .trim();
-};
-
-const oneTestRequestPattern = /(\b1\b\s*(super|single|big|main|overview|general|full|complete)?\s*(test|тест)|one\s+(super|single|big|main|full|complete)?\s*test|один\s+(супер|єдиний|головний|великий|повний)?\s*тест)/iu;
 
 
 export const buildTestCasePrompt = (input: GenerateTestCasesInput): string => {
@@ -20,7 +12,7 @@ export const buildTestCasePrompt = (input: GenerateTestCasesInput): string => {
     .map((value) => String(value || ""))
     .join("\n")
     .toLowerCase();
-  const singleComprehensiveMode = oneTestRequestPattern.test(combinedText);
+  const singleComprehensiveMode = isSingleComprehensiveRequest(combinedText);
   const compactHistory = (input.conversationHistory || [])
     .slice(-10)
     .map((item) => `${item.role.toUpperCase()}: ${item.content}`)
