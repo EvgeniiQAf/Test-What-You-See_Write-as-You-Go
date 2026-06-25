@@ -11,6 +11,7 @@ import {
   isUnsupportedImageError,
   normalizeImageUrls,
 } from "./openai.vision";
+import { parseOpenAiResponse } from "./openai.parser";
 
 export { buildMultimodalUserContent } from "./openai.vision";
 export { generateClarificationReply, shouldAskForClarification } from "./openai.clarification";
@@ -493,31 +494,6 @@ const normalizeTestCases = (rawCases: unknown, input: GenerateTestCasesInput): T
       tags: toStringArray(source.tags),
     };
   });
-};
-
-const parseOpenAiResponse = (rawContent: string): OpenAiResponse => {
-  const trimmed = rawContent.trim();
-
-  // Handle markdown fenced output like ```json ... ```.
-  const withoutFences = trimmed
-    .replace(/^```json\s*/i, "")
-    .replace(/^```\s*/i, "")
-    .replace(/\s*```$/, "")
-    .trim();
-
-  try {
-    return JSON.parse(withoutFences) as OpenAiResponse;
-  } catch {
-    // Fallback: extract the first JSON object region.
-    const start = withoutFences.indexOf("{");
-    const end = withoutFences.lastIndexOf("}");
-
-    if (start >= 0 && end > start) {
-      return JSON.parse(withoutFences.slice(start, end + 1)) as OpenAiResponse;
-    }
-
-    throw new Error("OpenAI returned non-JSON content");
-  }
 };
 
 export const generateTestCasesFromElement = async (
