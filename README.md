@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Testmo AI Helper
 
 This project is a helper service designed to integrate with Testmo and leverage AI capabilities, specifically from OpenAI, to assist with test case generation and management.
@@ -66,3 +67,7 @@ To run the test suite, execute the following command from the **root** directory
 ```bash
 npm test
 ```
+=======
+# Test-What-You-See.-Write-as-You-Go.
+Turn exploratory testing into living documentation. Select any UI element, describe its behavior, and let AI generate structured test cases from the real UI. Review and save everything directly to your Test Management System.
+>>>>>>> 88395a712bb35ca93b08ba751e88f2d185e8ef16
