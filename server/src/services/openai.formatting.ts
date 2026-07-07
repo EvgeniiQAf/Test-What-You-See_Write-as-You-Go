@@ -1,4 +1,4 @@
-import { MAX_TEST_CASES } from "../prompts/testcase.prompt";
+import { MAX_TEST_CASES } from "../prompts/testmo/steps/testcase.prompt";
 import { TestCase } from "../types/generate.types";
 import { GenerateTestCasesInput } from "../validations/generate.validation";
 

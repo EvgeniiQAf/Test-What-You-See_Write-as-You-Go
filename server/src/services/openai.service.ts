@@ -2,8 +2,8 @@ import { openai } from "../config/openai";
 import {
   buildTestCasePrompt,
   MAX_TEST_CASES,
-} from "../prompts/testcase.prompt";
-import { inferRequestedCount } from "../prompts/testcase-counts";
+} from "../prompts/testmo/steps/testcase.prompt";
+import { inferRequestedCount } from "../prompts/testmo/steps/testcase-counts";
 import { TestCase } from "../types/generate.types";
 import { GenerateTestCasesInput } from "../validations/generate.validation";
 import {

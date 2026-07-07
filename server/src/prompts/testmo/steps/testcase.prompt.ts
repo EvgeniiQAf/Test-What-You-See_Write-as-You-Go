@@ -1,4 +1,4 @@
-import { GenerateTestCasesInput } from "../validations/generate.validation";
+import { GenerateTestCasesInput } from "../../../validations/generate.validation";
 import { inferRequestedCount } from "./testcase-counts";
 import { MAX_TEST_CASES } from "./testcase.constants";
 import { isSingleComprehensiveRequest, normalizeScreenTitle } from "./testcase-context";

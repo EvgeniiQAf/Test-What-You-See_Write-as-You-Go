@@ -1,4 +1,4 @@
-import { GenerateTestCasesInput } from "../validations/generate.validation";
+import { GenerateTestCasesInput } from "../../../validations/generate.validation";
 import { MAX_TEST_CASES } from "./testcase.constants";
 
 const countWordMap: Record<string, number> = {
