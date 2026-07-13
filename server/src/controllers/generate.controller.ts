@@ -9,9 +9,11 @@ import {
 import { testmoClient } from "../services/testmo.service";
 import { ClarificationResponse, GenerateTestCasesResponse } from "../types/generate.types";
 import {
+  createTestCaseSchema,
   createTestmoCaseSchema,
   generateTestCasesSchema,
 } from "../validations/generate.validation";
+import { TmsFactory } from "../services/tms/tms.factory";
 
 export { chatWithAssistant } from "./chat.controller";
 
@@ -105,4 +107,38 @@ export const createTestmoCase = async (
     folderId: folderIdFromEnv,
     created: response.data?.result?.[0] || null,
   });
+};
+
+export const createTestCase = async (
+  req: Request,
+  res: Response<{ success: boolean; created?: unknown; folderId?: string | number; error?: string }>,
+): Promise<void> => {
+  console.log("\n[EXTENSION REQUEST] /api/create-testcase");
+
+  const validationResult = createTestCaseSchema.safeParse(req.body);
+
+  if (!validationResult.success) {
+    res.status(400).json({
+      success: false,
+      error: validationResult.error.issues[0]?.message || "Invalid request body",
+    });
+    return;
+  }
+
+  try {
+    const provider = TmsFactory.getProvider();
+    const result = await provider.createTestCase(validationResult.data.case);
+
+    res.json({
+      success: true,
+      folderId: result.folderId,
+      created: { id: result.createdId },
+    });
+  } catch (error: any) {
+    console.error("[CREATE CASE ERROR]", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Failed to create test case in active TMS",
+    });
+  }
 };

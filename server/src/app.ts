@@ -27,7 +27,9 @@ app.get("/health", (_req, res) => {
 
 app.get("/api/config", (_req, res) => {
   res.json({
+    activeTms: env.activeTms,
     testmoFolderId: env.testmoFolderId,
+    testomatSuiteId: env.testomatSuiteId,
   });
 });
 

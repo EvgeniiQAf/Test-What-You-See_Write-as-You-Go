@@ -2,12 +2,14 @@ import { Router } from "express";
 
 import {
 	chatWithAssistant,
+	createTestCase,
 	createTestmoCase,
 	generateTestCases,
 } from "../controllers/generate.controller";
 import { asyncHandler } from "../middlewares/async-handler.middleware";
 import { validate } from "../middlewares/validation.middleware";
 import {
+	createTestCaseSchema,
 	createTestmoCaseSchema,
 	generateTestCasesSchema,
 } from "../validations/generate.validation";
@@ -23,6 +25,11 @@ router.post(
 	"/create-testmo-case",
 	validate(createTestmoCaseSchema),
 	asyncHandler(createTestmoCase),
+);
+router.post(
+	"/create-testcase",
+	validate(createTestCaseSchema),
+	asyncHandler(createTestCase),
 );
 router.post("/chat", asyncHandler(chatWithAssistant));
 

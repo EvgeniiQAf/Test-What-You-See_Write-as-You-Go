@@ -261,25 +261,23 @@ const generateTestsCheckbox = document.getElementById("bgt-generate-tests");
 const testModeHint = document.getElementById("bgt-test-mode-hint");
 const addTestButton = document.getElementById("bgt-add-test");
 const sendButton = document.getElementById("bgt-send");
-let testmoFolderId = null;
+let activeTms = "testmo";
+let activeFolderId = null;
 const MAX_SELECTED_SCREENSHOTS = 3;
 
-async function loadTestmoFolderId() {
+async function loadTmsConfig() {
   try {
     const response = await fetch("http://localhost:3000/api/config");
     const result = await response.json();
-    const folderId = Number(result?.testmoFolderId || 0);
-
-    if (Number.isInteger(folderId) && folderId > 0) {
-      testmoFolderId = folderId;
-      console.log("Loaded Testmo folder id from server:", testmoFolderId);
-    }
+    activeTms = result?.activeTms || "testmo";
+    activeFolderId = activeTms === "testmo" ? result?.testmoFolderId : result?.testomatSuiteId;
+    console.log(`Loaded TMS Config: activeTms=${activeTms}, activeFolderId=${activeFolderId}`);
   } catch (error) {
-    console.warn("Failed to load Testmo folder id from server:", error);
+    console.warn("Failed to load TMS config from server:", error);
   }
 }
 
-void loadTestmoFolderId();
+void loadTmsConfig();
 
 function learnFromPrompt(userPrompt) {
   const text = String(userPrompt || "").toLowerCase();
@@ -1129,22 +1127,25 @@ function addTestCaseCard(testCase, index) {
     approveButton.textContent = "Approving...";
 
     try {
-      if (!testmoFolderId) {
-        await loadTestmoFolderId();
+      if (!activeFolderId) {
+        await loadTmsConfig();
       }
 
-      if (!testmoFolderId) {
-        throw new Error("Unable to load current Testmo folder id from server");
+      if (!activeFolderId) {
+        throw new Error(`Unable to load current ${activeTms} folder/suite identifier from server`);
       }
 
       const sequence = await getNextDraftSequence();
-      const draft = buildTestmoDraft(localTestCase, sequence);
+      const draft = {
+        generated_case_id: sequence,
+        case: localTestCase,
+      };
       const formattedSeq = formatSequence(sequence);
-      const fileName = `testmo-draft-${formattedSeq}.json`;
+      const fileName = `draft-${formattedSeq}.json`;
 
       await saveDraftJsonFile(fileName, draft);
 
-      const createResponse = await fetch("http://localhost:3000/api/create-testmo-case", {
+      const createResponse = await fetch("http://localhost:3000/api/create-testcase", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1156,18 +1157,18 @@ function addTestCaseCard(testCase, index) {
 
       if (!createResponse.ok || !createResult?.success) {
         const serverError = createResult?.error || `HTTP ${createResponse.status}`;
-        throw new Error(`Testmo create failed: ${serverError}`);
+        throw new Error(`TMS create failed: ${serverError}`);
       }
 
-      const storageKey = "bgt-approved-testmo-drafts";
+      const storageKey = "bgt-approved-tms-drafts";
       const current = JSON.parse(localStorage.getItem(storageKey) || "[]");
       current.push(draft);
       localStorage.setItem(storageKey, JSON.stringify(current));
 
       const createdCaseId = createResult?.created?.id || "n/a";
       const usedFolderId = createResult?.folderId || "env";
-      setStatus(`approved ${formattedSeq}, created in Testmo (#${createdCaseId})`, "#15803d");
-      addMessage("assistant", `Approved test #${index + 1}. Saved as ${fileName} and created in Testmo case #${createdCaseId} (folder ${usedFolderId}).`, { scroll: false });
+      setStatus(`approved ${formattedSeq}, created in ${activeTms} (#${createdCaseId})`, "#15803d");
+      addMessage("assistant", `Approved test #${index + 1}. Saved as ${fileName} and created in ${activeTms} case #${createdCaseId} (folder/suite ${usedFolderId}).`, { scroll: false });
       addMessage("assistant", JSON.stringify(draft, null, 2), { scroll: false });
       approveButton.textContent = `Approved #${formattedSeq}`;
     } catch (error) {

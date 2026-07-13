@@ -11,4 +11,12 @@ export const env = {
   testmoUrl: process.env.TESTMO_URL || "",
   testmoProjectId: process.env.TESTMO_PROJECT_ID || "",
   testmoFolderId: process.env.TESTMO_FOLDER_ID || "",
+  testmoTemplate: process.env.TESTMO_TEMPLATE || "steps",
+
+  activeTms: (process.env.ACTIVE_TMS || "testmo").toLowerCase(),
+
+  testomatApiKey: process.env.TESTOMAT_API_KEY || "",
+  testomatUrl: process.env.TESTOMAT_URL || "https://app.testomat.io",
+  testomatSuiteId: process.env.TESTOMAT_SUITE_ID || "",
+  testomatTemplate: process.env.TESTOMAT_TEMPLATE || "steps",
 };

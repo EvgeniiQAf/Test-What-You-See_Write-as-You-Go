@@ -116,6 +116,37 @@ export const createTestmoCaseSchema = z.object({
   case: testmoCasePayloadSchema,
 });
 
+export const standardTestCaseSchema = z.object({
+  title: z.object({
+    ua: z.string().min(1, "Ukrainian title is required"),
+    en: z.string().min(1, "English title is required"),
+  }),
+  preconditions: z.object({
+    ua: z.array(z.string()),
+    en: z.array(z.string()),
+  }),
+  steps: z.array(
+    z.object({
+      step: z.object({
+        ua: z.string().min(1, "step action in UA is required"),
+        en: z.string().min(1, "step action in EN is required"),
+      }),
+      expectedResults: z.object({
+        ua: z.array(z.string()),
+        en: z.array(z.string()),
+      }),
+    })
+  ).min(1, "at least one step is required"),
+  priority: z.enum(["Low", "Medium", "High"]).optional(),
+  tags: z.array(z.string()).optional(),
+});
+
+export const createTestCaseSchema = z.object({
+  generated_case_id: z.union([z.string(), z.number()]).optional(),
+  case: standardTestCaseSchema,
+});
+
 export type GenerateTestCasesInput = z.infer<typeof generateTestCasesSchema>;
 export type CreateTestmoCaseInput = z.infer<typeof createTestmoCaseSchema>;
+export type CreateTestCaseInput = z.infer<typeof createTestCaseSchema>;
 export type ChatInput = z.infer<typeof chatSchema>;
