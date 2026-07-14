@@ -1,11 +1,7 @@
 import { Request, Response } from "express";
-import {
-  ChatCompletionContentPart,
-  ChatCompletionMessageParam,
-} from "openai/resources/chat/completions";
-
-import { openai } from "../config/openai";
-import { buildMultimodalUserContent } from "../services/openai.service";
+import { LlmFactory } from "../services/llm/llm.factory";
+import { buildLlmMultimodalContent } from "../services/llm/llm.helper";
+import { LlmMessage } from "../services/llm/llm.types";
 import { chatSchema } from "../validations/generate.validation";
 
 export const chatWithAssistant = async (
@@ -44,14 +40,14 @@ export const chatWithAssistant = async (
     `url: ${input.url || "N/A"}`,
   ].join("\n");
 
-  const userMessageContent: ChatCompletionMessageParam["content"] = images.length > 0
-    ? buildMultimodalUserContent(
+  const userMessageContent = images.length > 0
+    ? buildLlmMultimodalContent(
         `${contextLines}\n\nUser question: ${input.userPrompt}`,
         images,
-      ) as ChatCompletionContentPart[]
+      )
     : `${contextLines}\n\nUser question: ${input.userPrompt}`;
 
-  const messages: ChatCompletionMessageParam[] = [
+  const messages: LlmMessage[] = [
     {
       role: "system",
       content: [
@@ -75,8 +71,8 @@ export const chatWithAssistant = async (
       role: "system",
       content: `Current context:\n${contextLines}`,
     },
-    ...history.slice(-10).map((item): ChatCompletionMessageParam => ({
-      role: item.role,
+    ...history.slice(-10).map((item): LlmMessage => ({
+      role: item.role as "user" | "assistant",
       content: item.content,
     })),
     {
@@ -85,46 +81,41 @@ export const chatWithAssistant = async (
     },
   ];
 
+  const provider = LlmFactory.getProvider();
+
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+    const reply = await provider.chatCompletion(messages, {
       temperature: 0.3,
-      response_format: { type: "text" },
-      messages,
     });
 
-    const reply = response.choices[0]?.message?.content?.trim();
-
-    if (!reply) {
+    const trimmedReply = reply.trim();
+    if (!trimmedReply) {
       res.status(502).json({ error: "Assistant returned empty response" });
       return;
     }
 
-    res.json({ reply });
+    res.json({ reply: trimmedReply });
   } catch (error) {
     if (images.length > 0) {
       console.warn("[CHAT] Image input rejected, retrying without images.");
-      const fallbackResponse = await openai.chat.completions.create({
-        model: "gpt-4o",
+      const fallbackReply = await provider.chatCompletion([
+        ...messages.slice(0, -1),
+        {
+          role: "user",
+          content: `${contextLines}\n\nUser question: ${input.userPrompt}`,
+        },
+      ], {
         temperature: 0.3,
-        response_format: { type: "text" },
-        messages: [
-          ...messages.slice(0, -1),
-          {
-            role: "user",
-            content: `${contextLines}\n\nUser question: ${input.userPrompt}`,
-          },
-        ],
       });
 
-      const fallbackReply = fallbackResponse.choices[0]?.message?.content?.trim();
+      const trimmedFallback = fallbackReply.trim();
 
-      if (!fallbackReply) {
+      if (!trimmedFallback) {
         res.status(502).json({ error: "Assistant returned empty response" });
         return;
       }
 
-      res.json({ reply: fallbackReply });
+      res.json({ reply: trimmedFallback });
       return;
     }
 

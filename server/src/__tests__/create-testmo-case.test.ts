@@ -1,3 +1,6 @@
+process.env.TESTMO_FOLDER_ID = '44';
+process.env.TESTMO_PROJECT_ID = '1';
+
 import request from 'supertest';
 import app from '../app';
 import { testmoClient } from '../services/testmo.service';
@@ -12,14 +15,18 @@ jest.mock('../services/testmo.service', () => ({
 describe('POST /api/create-testmo-case', () => {
   const mockCasePayload = {
     case: {
-      title: 'New Test Case',
-      template: 'steps',
-      steps: [{ content: 'Step 1' }],
+      folder_id: 1,
+      name: 'New Test Case',
+      state_id: 1,
+      template_id: 2,
+      custom_priority: 2,
+      custom_description: 'Description',
+      custom_steps: [{ text1: 'Step 1', text3: 'Result 1' }],
     },
   };
 
   const mockTestmoResponse = {
-    data: { id: 456 },
+    data: { result: [{ id: 456 }] },
   };
 
   beforeEach(() => {
@@ -39,7 +46,7 @@ describe('POST /api/create-testmo-case', () => {
     expect(response.status).toBe(200);
     // Перевіряємо тіло відповіді
     expect(response.body.success).toBe(true);
-    expect(response.body.created).toEqual(mockTestmoResponse.data);
+    expect(response.body.created).toEqual(mockTestmoResponse.data.result[0]);
     // Перевіряємо, що клієнт Testmo був викликаний
     expect(testmoClient.post).toHaveBeenCalledTimes(1);
   });

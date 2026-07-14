@@ -6,6 +6,13 @@ export const env = {
   port: Number(process.env.PORT) || 3000,
 
   openAiApiKey: process.env.OPENAI_API_KEY || "",
+  openaiModel: process.env.OPENAI_MODEL || "gpt-4o",
+
+  activeLlm: (process.env.ACTIVE_LLM || "openai").toLowerCase(),
+
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY || "",
+  anthropicUrl: process.env.ANTHROPIC_URL || "https://api.anthropic.com/v1",
+  anthropicModel: process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-20240620",
 
   testmoToken: process.env.TESTMO_TOKEN || "",
   testmoUrl: process.env.TESTMO_URL || "",

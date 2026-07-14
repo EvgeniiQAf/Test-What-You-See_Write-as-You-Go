@@ -3,5 +3,5 @@ import OpenAI from "openai";
 import { env } from "./env";
 
 export const openai = new OpenAI({
-  apiKey: env.openAiApiKey,
+  apiKey: env.openAiApiKey || "dummy-key-for-testing",
 });

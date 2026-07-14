@@ -37,7 +37,7 @@ describe('POST /api/generate-testcases', () => {
   it('should return 400 if validation fails', async () => {
     const response = await request(app)
       .post('/api/generate-testcases')
-      .send({ html: '' }); // Некоректний запит
+      .send({ url: 'invalid-url' }); // Некоректний запит
 
     // Перевіряємо, що статус відповіді 400
     expect(response.status).toBe(400);

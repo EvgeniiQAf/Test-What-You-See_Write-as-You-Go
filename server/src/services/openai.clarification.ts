@@ -1,5 +1,6 @@
-import { openai } from "../config/openai";
 import { GenerateTestCasesInput } from "../validations/generate.validation";
+import { LlmFactory } from "./llm/llm.factory";
+import { LlmMessage } from "./llm/llm.types";
 
 const pickInputText = (input: GenerateTestCasesInput): string => {
   return [input.userPrompt, input.pageTitle, input.selectedText, input.html]
@@ -64,19 +65,18 @@ User prompt: ${String(input.userPrompt || "")}
 };
 
 export const generateClarificationReply = async (input: GenerateTestCasesInput): Promise<string> => {
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      {
-        role: "system",
-        content: "You are a helpful QA assistant. Ask one concise clarifying question and do not generate test cases.",
-      },
-      {
-        role: "user",
-        content: buildClarificationPrompt(input),
-      },
-    ],
-  });
+  const provider = LlmFactory.getProvider();
+  const messages: LlmMessage[] = [
+    {
+      role: "system",
+      content: "You are a helpful QA assistant. Ask one concise clarifying question and do not generate test cases.",
+    },
+    {
+      role: "user",
+      content: buildClarificationPrompt(input),
+    },
+  ];
 
-  return response.choices[0]?.message?.content?.trim() || "Please clarify the exact scenario you want tested.";
+  const content = await provider.chatCompletion(messages);
+  return content.trim() || "Please clarify the exact scenario you want tested.";
 };
