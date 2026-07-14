@@ -1,36 +1,44 @@
 import { Router } from "express";
-
-import {
-	chatWithAssistant,
-	createTestCase,
-	createTestmoCase,
-	generateTestCases,
-} from "../controllers/generate.controller";
+import { GenerateController } from "../controllers/generate.controller";
+import { ChatController } from "../controllers/chat.controller";
 import { asyncHandler } from "../middlewares/async-handler.middleware";
 import { validate } from "../middlewares/validation.middleware";
 import {
-	createTestCaseSchema,
-	createTestmoCaseSchema,
-	generateTestCasesSchema,
+  createTestCaseSchema,
+  createTestmoCaseSchema,
+  generateTestCasesSchema,
 } from "../validations/generate.validation";
 
-const router = Router();
+export class GenerateRoutes {
+  public router: Router;
 
-router.post(
-	"/generate-testcases",
-	validate(generateTestCasesSchema),
-	asyncHandler(generateTestCases),
-);
-router.post(
-	"/create-testmo-case",
-	validate(createTestmoCaseSchema),
-	asyncHandler(createTestmoCase),
-);
-router.post(
-	"/create-testcase",
-	validate(createTestCaseSchema),
-	asyncHandler(createTestCase),
-);
-router.post("/chat", asyncHandler(chatWithAssistant));
+  constructor(
+    private generateController: GenerateController,
+    private chatController: ChatController,
+  ) {
+    this.router = Router();
+    this.setupRoutes();
+  }
 
-export default router;
+  private setupRoutes(): void {
+    this.router.post(
+      "/generate-testcases",
+      validate(generateTestCasesSchema),
+      asyncHandler(this.generateController.generateTestCases),
+    );
+    this.router.post(
+      "/create-testmo-case",
+      validate(createTestmoCaseSchema),
+      asyncHandler(this.generateController.createTestmoCase),
+    );
+    this.router.post(
+      "/create-testcase",
+      validate(createTestCaseSchema),
+      asyncHandler(this.generateController.createTestCase),
+    );
+    this.router.post(
+      "/chat",
+      asyncHandler(this.chatController.chatWithAssistant),
+    );
+  }
+}

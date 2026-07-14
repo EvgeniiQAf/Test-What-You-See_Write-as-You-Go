@@ -3,59 +3,92 @@ import cors from "cors";
 
 import { env } from "./config/env";
 import { errorMiddleware } from "./middlewares/error.middleware";
-import generateRoutes from "./routes/generate.routes";
+import { GenerateRoutes } from "./routes/generate.routes";
+import { GenerateController } from "./controllers/generate.controller";
+import { ChatController } from "./controllers/chat.controller";
+import { TestCaseGeneratorService } from "./services/testcase-generator.service";
+import { ClarificationService } from "./services/clarification.service";
 
-const app = express();
+export class App {
+  public app: express.Application;
 
-app.use(cors());
-app.use(express.json({ limit: "10mb" }));
+  constructor() {
+    this.app = express();
+    this.configureMiddlewares();
+    this.configureRoutes();
+    this.configureErrorHandling();
+  }
 
-// Request logging middleware
-app.use((req, res, next) => {
-  console.log(`\n[HTTP] ${req.method} ${req.path}`);
-  console.log("[CORS] Origin:", req.headers.origin || "none");
-  next();
-});
+  private configureMiddlewares(): void {
+    this.app.use(cors());
+    this.app.use(express.json({ limit: "10mb" }));
 
-app.get("/health", (_req, res) => {
-  console.log("[HEALTH CHECK] OK");
-  res.json({
-    status: "ok",
-    timestamp: new Date().toISOString(),
-  });
-});
+    // Request logging middleware
+    this.app.use((req, res, next) => {
+      console.log(`\n[HTTP] ${req.method} ${req.path}`);
+      console.log("[CORS] Origin:", req.headers.origin || "none");
+      next();
+    });
+  }
 
-app.get("/api/config", (_req, res) => {
-  res.json({
-    activeTms: env.activeTms,
-    testmoFolderId: env.testmoFolderId,
-    testomatSuiteId: env.testomatSuiteId,
-  });
-});
+  private configureRoutes(): void {
+    this.app.get("/health", (_req, res) => {
+      console.log("[HEALTH CHECK] OK");
+      res.json({
+        status: "ok",
+        timestamp: new Date().toISOString(),
+      });
+    });
 
-app.post("/api/extension-test", (req, res) => {
-  console.log("Extension data received:");
+    this.app.get("/api/config", (_req, res) => {
+      res.json({
+        activeTms: env.activeTms,
+        testmoFolderId: env.testmoFolderId,
+        testomatSuiteId: env.testomatSuiteId,
+      });
+    });
 
-  console.log({
-    element: req.body.element,
-    userPrompt: req.body.userPrompt,
-    hasScreenshot: Boolean(req.body.screenshot),
-    screenshotSize: req.body.screenshot?.length || 0,
-  });
+    this.app.post("/api/extension-test", (req, res) => {
+      console.log("Extension data received:");
 
-  res.json({
-    success: true,
-    message: "Data received from extension",
-    received: {
-      hasElement: Boolean(req.body.element),
-      hasPrompt: Boolean(req.body.userPrompt),
-      hasScreenshot: Boolean(req.body.screenshot),
-      screenshotSize: req.body.screenshot?.length || 0,
-    },
-  });
-});
+      console.log({
+        element: req.body.element,
+        userPrompt: req.body.userPrompt,
+        hasScreenshot: Boolean(req.body.screenshot),
+        screenshotSize: req.body.screenshot?.length || 0,
+      });
 
-app.use("/api", generateRoutes);
-app.use(errorMiddleware);
+      res.json({
+        success: true,
+        message: "Data received from extension",
+        received: {
+          hasElement: Boolean(req.body.element),
+          hasPrompt: Boolean(req.body.userPrompt),
+          hasScreenshot: Boolean(req.body.screenshot),
+          screenshotSize: req.body.screenshot?.length || 0,
+        },
+      });
+    });
 
-export default app;
+    // Dependency Injection: Instantiate services, controllers, and routes
+    const testCaseGeneratorService = new TestCaseGeneratorService();
+    const clarificationService = new ClarificationService();
+    const generateController = new GenerateController(
+      testCaseGeneratorService,
+      clarificationService,
+    );
+    const chatController = new ChatController();
+
+    const generateRoutes = new GenerateRoutes(generateController, chatController);
+
+    this.app.use("/api", generateRoutes.router);
+  }
+
+  private configureErrorHandling(): void {
+    this.app.use(errorMiddleware);
+  }
+}
+
+// Instantiate and export the default express application for backward compatibility
+const appInstance = new App();
+export default appInstance.app;
