@@ -58,7 +58,14 @@ export class ChatService {
       },
     ];
 
-    const provider = LlmFactory.getProvider();
+    if (input.customInstructions) {
+      messages.splice(1, 0, {
+        role: "system",
+        content: `Additional custom user instructions and rules: ${input.customInstructions}`,
+      });
+    }
+
+    const provider = LlmFactory.getProvider(input.preferredLlm);
 
     try {
       const reply = await provider.chatCompletion(messages, {
@@ -70,7 +77,12 @@ export class ChatService {
       if (images.length > 0) {
         console.warn("[CHAT SERVICE] Image input rejected, retrying without images.");
         const fallbackReply = await provider.chatCompletion([
-          ...messages.slice(0, -1),
+          ...messages.filter(msg => {
+            if (msg.role === "user" && typeof msg.content !== "string") {
+              return false; // exclude multimodal user content
+            }
+            return true;
+          }),
           {
             role: "user",
             content: `${contextLines}\n\nUser question: ${input.userPrompt}`,

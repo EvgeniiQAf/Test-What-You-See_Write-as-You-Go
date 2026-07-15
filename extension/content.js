@@ -87,20 +87,95 @@ const panel = document.createElement("div");
 
 panel.innerHTML = `
   <div id="bgt-header" style="font-weight: 700; margin-bottom: 8px; cursor: move; user-select: none; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-    <button id="bgt-close" aria-label="Close helper" style="
-      border: 1px solid #d1d5db;
-      background: #fff;
-      color: #374151;
-      border-radius: 6px;
-      width: 24px;
-      height: 24px;
-      line-height: 20px;
-      text-align: center;
-      cursor: pointer;
-      font-size: 14px;
-      padding: 0;
-      flex: 0 0 auto;
-    ">✕</button>
+    <span style="flex: 1; font-size: 13px;">QA Helper</span>
+    <div style="display: flex; gap: 6px; align-items: center;">
+      <button id="bgt-toggle-settings" aria-label="Settings" style="
+        border: 1px solid #d1d5db;
+        background: #fff;
+        color: #374151;
+        border-radius: 6px;
+        width: 24px;
+        height: 24px;
+        line-height: 20px;
+        text-align: center;
+        cursor: pointer;
+        font-size: 12px;
+        padding: 0;
+        flex: 0 0 auto;
+      ">⚙️</button>
+      <button id="bgt-close" aria-label="Close helper" style="
+        border: 1px solid #d1d5db;
+        background: #fff;
+        color: #374151;
+        border-radius: 6px;
+        width: 24px;
+        height: 24px;
+        line-height: 20px;
+        text-align: center;
+        cursor: pointer;
+        font-size: 14px;
+        padding: 0;
+        flex: 0 0 auto;
+      ">✕</button>
+    </div>
+  </div>
+
+  <div id="bgt-settings-panel" style="
+    display: none;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 8px;
+    background: #f9fafb;
+    font-size: 12px;
+    flex-direction: column;
+    gap: 8px;
+  ">
+    <div style="font-weight: 600; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; display: flex; justify-content: space-between;">
+      <span>Налаштування / Settings</span>
+    </div>
+    
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <label style="font-weight: 500; color: #374151;">Формат тестів / Format:</label>
+      <select id="bgt-setting-format" style="width: 100%; padding: 4px; border-radius: 4px; border: 1px solid #d1d5db; background: #fff; color: #1f2937;">
+        <option value="steps">Classic Steps (Кроки та Очікувані результати)</option>
+        <option value="bdd">BDD / Gherkin (Given / When / Then)</option>
+      </select>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <label style="font-weight: 500; color: #374151;">Мова генерації / Language:</label>
+      <select id="bgt-setting-lang" style="width: 100%; padding: 4px; border-radius: 4px; border: 1px solid #d1d5db; background: #fff; color: #1f2937;">
+        <option value="default">Автовизначення / Default (detect)</option>
+        <option value="ua">Тільки Українська / Ukrainian (UA)</option>
+        <option value="en">Тільки Англійська / English (EN)</option>
+        <option value="bilingual">Двомовний / Bilingual (UA & EN)</option>
+      </select>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <label style="font-weight: 500; color: #374151;">Модель ШІ / AI Engine:</label>
+      <select id="bgt-setting-llm" style="width: 100%; padding: 4px; border-radius: 4px; border: 1px solid #d1d5db; background: #fff; color: #1f2937;">
+        <option value="default">За замовчуванням / Default active</option>
+        <option value="openai">ChatGPT (OpenAI)</option>
+        <option value="claude">Claude (Anthropic)</option>
+      </select>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <label style="font-weight: 500; color: #374151;">Кастомні правила / Custom rules:</label>
+      <textarea id="bgt-setting-rules" placeholder="Наприклад: пиши кроки максимально лаконічно, без зайвих слів" style="
+        width: 100%;
+        height: 50px;
+        box-sizing: border-box;
+        padding: 4px;
+        border-radius: 4px;
+        border: 1px solid #d1d5db;
+        resize: vertical;
+        background: #fff;
+        color: #1f2937;
+      "></textarea>
+    </div>
   </div>
 
   <div style="font-size: 12px; margin-bottom: 6px;">
@@ -260,9 +335,42 @@ const generateTestsCheckbox = document.getElementById("bgt-generate-tests");
 const testModeHint = document.getElementById("bgt-test-mode-hint");
 const addTestButton = document.getElementById("bgt-add-test");
 const sendButton = document.getElementById("bgt-send");
+
+// Settings Panel DOM references
+const toggleSettingsButton = document.getElementById("bgt-toggle-settings");
+const settingsPanel = document.getElementById("bgt-settings-panel");
+const settingFormat = document.getElementById("bgt-setting-format");
+const settingLang = document.getElementById("bgt-setting-lang");
+const settingLlm = document.getElementById("bgt-setting-llm");
+const settingRules = document.getElementById("bgt-setting-rules");
+
 let activeTms = "testmo";
 let activeFolderId = null;
 const MAX_SELECTED_SCREENSHOTS = 3;
+
+function getSavedSettings() {
+  return {
+    format: localStorage.getItem("bgt-setting-format") || "steps",
+    lang: localStorage.getItem("bgt-setting-lang") || "default",
+    llm: localStorage.getItem("bgt-setting-llm") || "default",
+    rules: localStorage.getItem("bgt-setting-rules") || "",
+  };
+}
+
+function saveSettings(settings) {
+  localStorage.setItem("bgt-setting-format", settings.format);
+  localStorage.setItem("bgt-setting-lang", settings.lang);
+  localStorage.setItem("bgt-setting-llm", settings.llm);
+  localStorage.setItem("bgt-setting-rules", settings.rules);
+}
+
+function applySavedSettingsToUi() {
+  const settings = getSavedSettings();
+  if (settingFormat) settingFormat.value = settings.format;
+  if (settingLang) settingLang.value = settings.lang;
+  if (settingLlm) settingLlm.value = settings.llm;
+  if (settingRules) settingRules.value = settings.rules;
+}
 
 async function loadTmsConfig() {
   try {
@@ -277,9 +385,43 @@ async function loadTmsConfig() {
 }
 
 void loadTmsConfig();
+applySavedSettingsToUi();
+
+// Add change listeners to save settings automatically
+[settingFormat, settingLang, settingLlm].forEach(el => {
+  el?.addEventListener("change", () => {
+    saveSettings({
+      format: settingFormat.value,
+      lang: settingLang.value,
+      llm: settingLlm.value,
+      rules: settingRules.value,
+    });
+  });
+});
+
+settingRules?.addEventListener("input", () => {
+  saveSettings({
+    format: settingFormat.value,
+    lang: settingLang.value,
+    llm: settingLlm.value,
+    rules: settingRules.value,
+  });
+});
+
+// Toggle settings panel visibility
+toggleSettingsButton?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  const isHidden = settingsPanel.style.display === "none";
+  settingsPanel.style.display = isHidden ? "flex" : "none";
+  toggleSettingsButton.style.background = isHidden ? "#e5e7eb" : "#fff";
+});
 
 generateTestsCheckbox?.addEventListener("change", (event) => {
   setTestModeHint(event.target.checked, "manual");
+});
+
+settingFormat?.addEventListener("change", () => {
+  setTestModeHint(generateTestsCheckbox.checked, "manual");
 });
 
 function learnFromPrompt(userPrompt) {
@@ -359,7 +501,10 @@ function setTestModeHint(active, source = "manual") {
     return;
   }
 
-  testModeHint.textContent = source === "auto" ? "Mode: test cases (auto-detected)" : "Mode: test cases";
+  const isBdd = settingFormat?.value === "bdd";
+  const formatName = isBdd ? "BDD / Gherkin" : "test cases";
+
+  testModeHint.textContent = source === "auto" ? `Mode: ${formatName} (auto-detected)` : `Mode: ${formatName}`;
   testModeHint.style.color = "#15803d";
 }
 
@@ -1447,6 +1592,11 @@ async function sendPrompt() {
   const placeholder = primarySelection?.placeholder || "";
   const elementTag = primarySelection?.tag || "";
 
+  const preferredLlm = settingLlm?.value || "default";
+  const format = settingFormat?.value || "steps";
+  const language = settingLang?.value || "default";
+  const customInstructions = settingRules?.value || "";
+
   const payload = shouldGenerateTests
     ? {
       html: primarySelection?.outerHTML || "",
@@ -1462,6 +1612,10 @@ async function sendPrompt() {
       userPrompt,
       conversationHistory,
       preferenceProfile,
+      preferredLlm,
+      format,
+      language,
+      customInstructions,
     }
     : {
       userPrompt,
@@ -1477,6 +1631,10 @@ async function sendPrompt() {
       images: normalizedSelectedScreenshots.slice(0, MAX_SELECTED_SCREENSHOTS),
       conversationHistory,
       preferenceProfile,
+      preferredLlm,
+      format,
+      language,
+      customInstructions,
     };
 
   const pendingMessage = addMessage("assistant", shouldGenerateTests ? "Generating test case(s)..." : "Thinking...");

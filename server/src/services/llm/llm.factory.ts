@@ -4,9 +4,9 @@ import { OpenaiProvider } from "./openai.provider";
 import { ClaudeProvider } from "./claude.provider";
 
 export class LlmFactory {
-  static getProvider(): LlmProvider {
-    const llm = env.activeLlm;
-    console.log(`[LLM FACTORY] Initializing provider for active LLM: ${llm}`);
+  static getProvider(override?: string): LlmProvider {
+    const llm = override && override !== "default" ? override : env.activeLlm;
+    console.log(`[LLM FACTORY] Initializing provider for active LLM: ${llm}${override && override !== "default" ? " (overridden by request)" : ""}`);
 
     switch (llm) {
       case "anthropic":

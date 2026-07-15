@@ -46,6 +46,10 @@ export const generateTestCasesSchema = z.object({
       notes: z.array(z.string().min(1)).max(20).optional(),
     })
     .optional(),
+  preferredLlm: z.enum(["openai", "claude", "default"]).optional(),
+  format: z.enum(["steps", "bdd"]).optional(),
+  language: z.enum(["default", "ua", "en", "bilingual"]).optional(),
+  customInstructions: z.string().optional(),
 });
 
 export const chatSchema = z.object({
@@ -94,6 +98,10 @@ export const chatSchema = z.object({
       notes: z.array(z.string().min(1)).max(20).optional(),
     })
     .optional(),
+  preferredLlm: z.enum(["openai", "claude", "default"]).optional(),
+  format: z.enum(["steps", "bdd"]).optional(),
+  language: z.enum(["default", "ua", "en", "bilingual"]).optional(),
+  customInstructions: z.string().optional(),
 });
 
 export const testmoStepSchema = z.object({

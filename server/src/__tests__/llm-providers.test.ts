@@ -50,6 +50,13 @@ describe("LLM Providers Layer", () => {
       const provider2 = LlmFactory.getProvider();
       expect(provider2).toBeInstanceOf(ClaudeProvider);
     });
+
+    it("should return ClaudeProvider when overridden by request override parameter, ignoring activeLlm", () => {
+      env.activeLlm = "openai";
+      const provider = LlmFactory.getProvider("claude");
+      expect(provider).toBeInstanceOf(ClaudeProvider);
+      expect(provider.getLlmName()).toBe("claude");
+    });
   });
 
   describe("OpenaiProvider", () => {

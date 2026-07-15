@@ -14,12 +14,52 @@ export class TestCaseGeneratorService {
   public async generateTestCases(
     input: GenerateTestCasesInput,
   ): Promise<{ testCases: TestCase[]; debug: { imagesReceived: number; imageMode: "vision" | "text-only" } }> {
-    const prompt = buildTestCasePrompt(input);
+    let prompt = buildTestCasePrompt(input);
+
+    if (input.format === "bdd") {
+      prompt += `
+\n\nCRITICAL BDD FORMATTING REQUIREMENT:
+- You must write the preconditions and steps in BDD Gherkin format.
+- Preconditions should be formulated as "Given ..." / "Дано ...".
+- Steps should be formulated as "When ..." / "Коли ...".
+- Expected results should be formulated as "Then ..." / "Тоді ...".
+- Example step structure in JSON for BDD:
+  "preconditions": {
+    "ua": ["Дано користувач знаходиться на головній сторінці"],
+    "en": ["Given the user is on the main page"]
+  },
+  "steps": [
+    {
+      "step": {
+        "ua": "Коли користувач натискає на кнопку \"Увійти\"",
+        "en": "When the user clicks the \"Login\" button"
+      },
+      "expectedResults": {
+        "ua": ["Тоді користувач бачить панель управління", "Тоді відображається повідомлення про успішний вхід"],
+        "en": ["Then the user sees the dashboard", "Then a successful login message is displayed"]
+      }
+    }
+  ]
+`;
+    }
+
+    if (input.language === "ua") {
+      prompt += `\n\nCRITICAL LANGUAGE REQUIREMENT: Generate all content fields ONLY in Ukrainian (UA). Even for English keys ("en"), write the Ukrainian translation or value.`;
+    } else if (input.language === "en") {
+      prompt += `\n\nCRITICAL LANGUAGE REQUIREMENT: Generate all content fields ONLY in English (EN). Even for Ukrainian keys ("ua"), write the English translation or value.`;
+    } else if (input.language === "bilingual") {
+      prompt += `\n\nCRITICAL LANGUAGE REQUIREMENT: Generate bilingual content - Ukrainian for "ua" keys, and English for "en" keys.`;
+    }
+
+    if (input.customInstructions) {
+      prompt += `\n\nADDITIONAL CUSTOM USER RULES:\n${input.customInstructions}`;
+    }
+
     const requestedCount = inferRequestedCount(input);
     const images = this.llmParser.normalizeImageUrls((input as any).images);
 
     const callLlm = async (userPrompt: string, attachedImages: string[]) => {
-      const provider = LlmFactory.getProvider();
+      const provider = LlmFactory.getProvider(input.preferredLlm);
       const messages: LlmMessage[] = [
         {
           role: "system",
@@ -45,7 +85,7 @@ export class TestCaseGeneratorService {
       return this.llmParser.normalizeTestCasesFromOpenAi(parsed.testCases, input);
     };
 
-    const providerName = LlmFactory.getProvider().getLlmName();
+    const providerName = LlmFactory.getProvider(input.preferredLlm).getLlmName();
     console.log(`[LLM] Calling API via provider: ${providerName}`);
     console.log("[LLM] Prompt length:", prompt.length, "chars");
     console.log("[LLM] Attached images:", images.length);
