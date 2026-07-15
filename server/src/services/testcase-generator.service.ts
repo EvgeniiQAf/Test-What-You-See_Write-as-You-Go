@@ -6,17 +6,17 @@ import { GenerateTestCasesInput } from "../validations/generate.validation";
 import { LlmFactory } from "./llm/llm.factory";
 import { buildLlmMultimodalContent } from "./llm/llm.helper";
 import { LlmMessage } from "./llm/llm.types";
-import { normalizeTestCasesFromOpenAi } from "./openai.formatting";
-import { parseOpenAiResponse } from "./openai.parser";
-import { isUnsupportedImageError, normalizeImageUrls } from "./openai.vision";
+import { LlmParserService } from "./llm-parser.service";
 
 export class TestCaseGeneratorService {
+  constructor(private llmParser: LlmParserService) {}
+
   public async generateTestCases(
     input: GenerateTestCasesInput,
   ): Promise<{ testCases: TestCase[]; debug: { imagesReceived: number; imageMode: "vision" | "text-only" } }> {
     const prompt = buildTestCasePrompt(input);
     const requestedCount = inferRequestedCount(input);
-    const images = normalizeImageUrls((input as any).images);
+    const images = this.llmParser.normalizeImageUrls((input as any).images);
 
     const callLlm = async (userPrompt: string, attachedImages: string[]) => {
       const provider = LlmFactory.getProvider();
@@ -36,13 +36,13 @@ export class TestCaseGeneratorService {
       });
 
       console.log(`[LLM] Response received from provider: ${provider.getLlmName()}, parsing JSON...`);
-      const parsed = parseOpenAiResponse(content);
+      const parsed = this.llmParser.parseOpenAiResponse(content);
 
       if (!Array.isArray(parsed.testCases)) {
         throw new Error("LLM JSON is missing testCases array");
       }
 
-      return normalizeTestCasesFromOpenAi(parsed.testCases, input);
+      return this.llmParser.normalizeTestCasesFromOpenAi(parsed.testCases, input);
     };
 
     const providerName = LlmFactory.getProvider().getLlmName();
@@ -67,7 +67,7 @@ export class TestCaseGeneratorService {
         },
       };
     } catch (error) {
-      if (images.length > 0 && isUnsupportedImageError(error)) {
+      if (images.length > 0 && this.llmParser.isUnsupportedImageError(error)) {
         console.warn("[LLM] Image input was rejected, retrying without images.");
         const fallbackNormalized = await callLlm(`${prompt}\n\nCRITICAL: Return exactly ${requestedCount} test cases in testCases array.`, []);
         return {

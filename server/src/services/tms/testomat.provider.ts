@@ -1,19 +1,21 @@
 import axios from "axios";
-import { env } from "../../config/env";
+import { ConfigService } from "../config.service";
 import { TmsProvider } from "./tms-provider.interface";
 import { StandardTestCase } from "./tms.types";
 
 export class TestomatProvider implements TmsProvider {
+  constructor(private configService: ConfigService) {}
+
   getTmsName(): string {
     return "testomat";
   }
 
   getSuiteIdentifier(): string | number {
-    return env.testomatSuiteId || "Sprint 1";
+    return this.configService.testomatSuiteId || "Sprint 1";
   }
 
   async createTestCase(testCase: StandardTestCase): Promise<{ success: boolean; createdId: string | number; folderId: string | number }> {
-    const apiKey = env.testomatApiKey;
+    const apiKey = this.configService.testomatApiKey;
     if (!apiKey) {
       throw new Error("TESTOMAT_API_KEY is missing in .env");
     }
@@ -38,7 +40,7 @@ export class TestomatProvider implements TmsProvider {
       ],
     };
 
-    const url = `${env.testomatUrl}/api/load?api_key=${apiKey}&force=true`;
+    const url = `${this.configService.testomatUrl}/api/load?api_key=${apiKey}&force=true`;
     console.log(`[TESTOMAT.IO] Posting to ${url} with suite path ${suitePath.join(" > ")}`);
     console.log(`[TESTOMAT.IO] Payload:`, JSON.stringify(payload, null, 2));
 
@@ -67,7 +69,7 @@ export class TestomatProvider implements TmsProvider {
       ? `### Preconditions\n${preconditionsList.map((p) => `- ${p}`).join("\n")}\n\n`
       : "";
 
-    if (env.testomatTemplate === "text") {
+    if (this.configService.testomatTemplate === "text") {
       // General text template (just description + preconditions)
       return `${preconditionsMarkdown}`;
     }

@@ -10,7 +10,9 @@ import { TestCaseGeneratorService } from "./services/testcase-generator.service"
 import { ClarificationService } from "./services/clarification.service";
 import { ChatService } from "./services/chat.service";
 import { TmsService } from "./services/tms.service";
+import { TmsFactory } from "./services/tms/tms.factory";
 import { ConfigService } from "./services/config.service";
+import { LlmParserService } from "./services/llm-parser.service";
 
 export class App {
   public app: express.Application;
@@ -75,10 +77,12 @@ export class App {
 
     // Dependency Injection: Instantiate services, controllers, and routes
     const configService = new ConfigService();
-    const testCaseGeneratorService = new TestCaseGeneratorService();
+    const llmParserService = new LlmParserService();
+    const testCaseGeneratorService = new TestCaseGeneratorService(llmParserService);
     const clarificationService = new ClarificationService();
     const chatService = new ChatService();
-    const tmsService = new TmsService();
+    const tmsFactory = new TmsFactory(configService);
+    const tmsService = new TmsService(tmsFactory);
 
     const generateController = new GenerateController(
       testCaseGeneratorService,

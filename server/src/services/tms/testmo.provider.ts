@@ -1,26 +1,28 @@
-import { env } from "../../config/env";
+import { ConfigService } from "../config.service";
 import { testmoClient } from "../testmo.service";
 import { TmsProvider } from "./tms-provider.interface";
 import { StandardTestCase } from "./tms.types";
 
 export class TestmoProvider implements TmsProvider {
+  constructor(private configService: ConfigService) {}
+
   getTmsName(): string {
     return "testmo";
   }
 
   getSuiteIdentifier(): string | number {
-    return Number(env.testmoFolderId || "0");
+    return Number(this.configService.testmoFolderId || "0");
   }
 
   async createTestCase(testCase: StandardTestCase): Promise<{ success: boolean; createdId: string | number; folderId: string | number }> {
-    const projectId = Number(env.testmoProjectId || "1");
+    const projectId = Number(this.configService.testmoProjectId || "1");
     const folderId = this.getSuiteIdentifier();
 
     if (!folderId || folderId <= 0) {
       throw new Error("TESTMO_FOLDER_ID is missing or invalid in .env");
     }
 
-    const templateId = env.testmoTemplate === "text" ? 1 : 2; // 2 for steps, 1 for classic/text
+    const templateId = this.configService.testmoTemplate === "text" ? 1 : 2; // 2 for steps, 1 for classic/text
     const priority = this.priorityToCustomPriority(testCase.priority || "Medium");
 
     let payload: any = {
@@ -31,7 +33,7 @@ export class TestmoProvider implements TmsProvider {
       custom_priority: priority,
     };
 
-    if (env.testmoTemplate === "text") {
+    if (this.configService.testmoTemplate === "text") {
       payload.custom_description = this.buildTextTemplateHtml(testCase);
     } else {
       payload.custom_description = this.buildPreconditionsHtml(testCase.preconditions.en || testCase.preconditions.ua || []);

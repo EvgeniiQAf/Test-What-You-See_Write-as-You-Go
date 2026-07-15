@@ -512,7 +512,7 @@ function renderSelectedScreenshotsSummary() {
           const disabled = item.selected !== false || selectedCount < MAX_SELECTED_SCREENSHOTS ? "" : "disabled";
           return `
             <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer;">
-              <input type="checkbox" data-screenshot-id="${escapeHtml(item.id)}" ${checked} ${disabled} style="margin-top:2px;" />
+              <input type="checkbox" data-screenshot-id="${escapeHtml(item.id)}" ${checked} ${disabled} style="all:revert; display: inline-block !important; opacity: 1 !important; visibility: visible !important; width: 14px !important; height: 14px !important; margin: 0 !important; margin-top:2px !important; cursor: pointer !important; -webkit-appearance: checkbox !important; appearance: checkbox !important;" />
               <span style="display:flex; flex-direction:column; gap:4px; flex:1;">
                 <span>${previewLabel}</span>
                 <img src="${item.dataUrl}" alt="${previewLabel}" style="max-width:120px; max-height:70px; border-radius:4px; border:1px solid #d1d5db; object-fit:cover;" />
