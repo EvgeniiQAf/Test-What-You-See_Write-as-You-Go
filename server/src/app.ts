@@ -8,6 +8,9 @@ import { GenerateController } from "./controllers/generate.controller";
 import { ChatController } from "./controllers/chat.controller";
 import { TestCaseGeneratorService } from "./services/testcase-generator.service";
 import { ClarificationService } from "./services/clarification.service";
+import { ChatService } from "./services/chat.service";
+import { TmsService } from "./services/tms.service";
+import { ConfigService } from "./services/config.service";
 
 export class App {
   public app: express.Application;
@@ -71,13 +74,18 @@ export class App {
     });
 
     // Dependency Injection: Instantiate services, controllers, and routes
+    const configService = new ConfigService();
     const testCaseGeneratorService = new TestCaseGeneratorService();
     const clarificationService = new ClarificationService();
+    const chatService = new ChatService();
+    const tmsService = new TmsService();
+
     const generateController = new GenerateController(
       testCaseGeneratorService,
       clarificationService,
+      tmsService,
     );
-    const chatController = new ChatController();
+    const chatController = new ChatController(chatService);
 
     const generateRoutes = new GenerateRoutes(generateController, chatController);
 

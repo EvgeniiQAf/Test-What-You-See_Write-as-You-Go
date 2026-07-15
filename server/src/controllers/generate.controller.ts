@@ -2,8 +2,8 @@ import { Request, Response } from "express";
 import { env } from "../config/env";
 import { TestCaseGeneratorService } from "../services/testcase-generator.service";
 import { ClarificationService } from "../services/clarification.service";
+import { TmsService } from "../services/tms.service";
 import { testmoClient } from "../services/testmo.service";
-import { TmsFactory } from "../services/tms/tms.factory";
 import { ClarificationResponse, GenerateTestCasesResponse } from "../types/generate.types";
 import {
   createTestCaseSchema,
@@ -15,6 +15,7 @@ export class GenerateController {
   constructor(
     private testCaseGenerator: TestCaseGeneratorService,
     private clarificationService: ClarificationService,
+    private tmsService: TmsService,
   ) {}
 
   public generateTestCases = async (
@@ -126,8 +127,7 @@ export class GenerateController {
     }
 
     try {
-      const provider = TmsFactory.getProvider();
-      const result = await provider.createTestCase(validationResult.data.case);
+      const result = await this.tmsService.createTestCase(validationResult.data.case);
 
       res.json({
         success: true,

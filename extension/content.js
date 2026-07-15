@@ -142,7 +142,6 @@ panel.innerHTML = `
     border: 1px solid #e5e7eb;
     border-radius: 6px;
     padding: 8px;
-  setTestModeHint(false);
     margin-bottom: 8px;
     font-size: 12px;
     background: #ffffff;
@@ -168,8 +167,8 @@ panel.innerHTML = `
     margin-bottom: 8px;
   "></textarea>
 
-  <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:12px; color:#374151; user-select:none;">
-    <input id="bgt-generate-tests" type="checkbox" style="margin:0;" />
+  <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:12px; color:#374151; user-select:none; cursor:pointer;">
+    <input id="bgt-generate-tests" type="checkbox" style="all:revert; display: inline-block !important; opacity: 1 !important; visibility: visible !important; width: 14px !important; height: 14px !important; margin: 0 !important; cursor: pointer !important; -webkit-appearance: checkbox !important; appearance: checkbox !important;" />
     Generate as test cases
   </label>
   
@@ -278,6 +277,10 @@ async function loadTmsConfig() {
 }
 
 void loadTmsConfig();
+
+generateTestsCheckbox?.addEventListener("change", (event) => {
+  setTestModeHint(event.target.checked, "manual");
+});
 
 function learnFromPrompt(userPrompt) {
   const text = String(userPrompt || "").toLowerCase();

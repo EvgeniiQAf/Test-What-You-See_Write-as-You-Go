@@ -1,11 +1,10 @@
 import { Request, Response } from "express";
-import { LlmFactory } from "../services/llm/llm.factory";
-import { buildLlmMultimodalContent } from "../services/llm/llm.helper";
-import { LlmMessage } from "../services/llm/llm.types";
+import { ChatService } from "../services/chat.service";
 import { chatSchema } from "../validations/generate.validation";
-import { LLM_PROMPTS } from "../prompts/llm.prompts";
 
 export class ChatController {
+  constructor(private chatService: ChatService) {}
+
   public chatWithAssistant = async (
     req: Request,
     res: Response<{ reply?: string; error?: string }>,
@@ -19,98 +18,17 @@ export class ChatController {
       return;
     }
 
-    const input = validationResult.data;
-    const history = input.conversationHistory || [];
-    const preferenceProfile = input.preferenceProfile || {};
-    const images = Array.isArray(input.images)
-      ? input.images
-          .map((image) => String(image || "").trim())
-          .filter((image) => image.startsWith("data:image/") || /^https?:\/\//i.test(image))
-      : [];
-    const normalizedPageTitle = String(input.pageTitle || "")
-      .replace(/\s*[-|]\s*TripLink\s*$/i, "")
-      .replace(/^TripLink\s*[-|]\s*/i, "")
-      .trim();
-    const contextLines = [
-      `pageTitle: ${normalizedPageTitle || "N/A"}`,
-      `selectedText: ${input.selectedText || "N/A"}`,
-      `elementLabel: ${input.elementLabel || "N/A"}`,
-      `ariaLabel: ${input.ariaLabel || "N/A"}`,
-      `placeholder: ${input.placeholder || "N/A"}`,
-      `elementTag: ${input.elementTag || "N/A"}`,
-      `html: ${input.html || "N/A"}`,
-      `url: ${input.url || "N/A"}`,
-    ].join("\n");
-
-    const userMessageContent = images.length > 0
-      ? buildLlmMultimodalContent(
-          `${contextLines}\n\nUser question: ${input.userPrompt}`,
-          images,
-        )
-      : `${contextLines}\n\nUser question: ${input.userPrompt}`;
-
-    const messages: LlmMessage[] = [
-      {
-        role: "system",
-        content: LLM_PROMPTS.chatSystem,
-      },
-      {
-        role: "system",
-        content: `User preferences: ${JSON.stringify(preferenceProfile)}`,
-      },
-      {
-        role: "system",
-        content: `Current context:\n${contextLines}`,
-      },
-      ...history.slice(-10).map((item): LlmMessage => ({
-        role: item.role as "user" | "assistant",
-        content: item.content,
-      })),
-      {
-        role: "user",
-        content: userMessageContent,
-      },
-    ];
-
-    const provider = LlmFactory.getProvider();
-
     try {
-      const reply = await provider.chatCompletion(messages, {
-        temperature: 0.3,
-      });
-
-      const trimmedReply = reply.trim();
-      if (!trimmedReply) {
+      const reply = await this.chatService.chatWithAssistant(validationResult.data);
+      if (!reply) {
         res.status(502).json({ error: "Assistant returned empty response" });
         return;
       }
 
-      res.json({ reply: trimmedReply });
-    } catch (error) {
-      if (images.length > 0) {
-        console.warn("[CHAT] Image input rejected, retrying without images.");
-        const fallbackReply = await provider.chatCompletion([
-          ...messages.slice(0, -1),
-          {
-            role: "user",
-            content: `${contextLines}\n\nUser question: ${input.userPrompt}`,
-          },
-        ], {
-          temperature: 0.3,
-        });
-
-        const trimmedFallback = fallbackReply.trim();
-
-        if (!trimmedFallback) {
-          res.status(502).json({ error: "Assistant returned empty response" });
-          return;
-        }
-
-        res.json({ reply: trimmedFallback });
-        return;
-      }
-
-      throw error;
+      res.json({ reply });
+    } catch (error: any) {
+      console.error("[CHAT CONTROLLER ERROR]", error);
+      res.status(500).json({ error: error.message || "Internal server error" });
     }
   };
 }
