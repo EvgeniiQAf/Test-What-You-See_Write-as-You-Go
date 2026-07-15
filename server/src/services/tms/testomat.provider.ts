@@ -66,7 +66,7 @@ export class TestomatProvider implements TmsProvider {
   private formatTestCaseToMarkdown(testCase: StandardTestCase): string {
     const preconditionsList = testCase.preconditions.en || testCase.preconditions.ua || [];
     const preconditionsMarkdown = preconditionsList.length > 0
-      ? `### Preconditions\n${preconditionsList.map((p) => `- ${p}`).join("\n")}\n\n`
+      ? `## Preconditions\n${preconditionsList.map((p) => `- ${p}`).join("\n")}\n\n`
       : "";
 
     if (this.configService.testomatTemplate === "text") {
@@ -77,15 +77,15 @@ export class TestomatProvider implements TmsProvider {
     // Steps template
     const stepsMarkdown = testCase.steps
       .map((step, stepIndex) => {
-        const action = `1. ${step.step.en || step.step.ua}`;
+        const action = `${stepIndex + 1}. ${step.step.en || step.step.ua}`;
         const expectedList = step.expectedResults.en || step.expectedResults.ua || [];
         const expected = expectedList.length > 0
-          ? `\n   * **Expected:** ${expectedList.join(", ")}`
+          ? `\n   - Expected: ${expectedList.join(", ")}`
           : "";
         return `${action}${expected}`;
       })
       .join("\n");
 
-    return `${preconditionsMarkdown}### Steps\n${stepsMarkdown}`;
+    return `${preconditionsMarkdown}## Steps\n${stepsMarkdown}`;
   }
 }
