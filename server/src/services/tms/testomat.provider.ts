@@ -35,6 +35,7 @@ export class TestomatProvider implements TmsProvider {
         {
           name: testCase.title.en || testCase.title.ua || "Generated Test Case",
           suites: suitePath,
+          description: formattedCode,
           code: formattedCode,
         },
       ],
