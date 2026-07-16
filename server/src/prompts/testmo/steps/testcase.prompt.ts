@@ -68,9 +68,13 @@ CORE QA RULES:
    - Always wrap exact UI elements, screen names, or buttons from the UI context in double quotes.
 
 2. PRECONDITIONS (ПЕРЕДУМОВИ):
-   - If the user explicitly mentions any starting state, roles (e.g. Admin), setup, or preconditions in their prompt or conversation history, you MUST use them exactly as written. Do NOT paraphrase, delete, or replace them.
-   - If no preconditions are specified by the user, state only the target page/screen opened, based on pageTitle/UI context (e.g., "The \"Feed | LinkedIn\" page is open"). Keep them factual, neutral, and separate.
-   - Do NOT include URLs or web links in preconditions.
+   - Analyze the UI context, screenshots, page title, selected elements, and user prompt to dynamically determine logical, practical preconditions.
+   - If the user explicitly mentions roles (e.g. Admin), data setup (e.g. table is populated), or starting states in the prompt or conversation history, listen to them and include them as preconditions.
+   - Infer logical prerequisites from element states:
+     * If the selected element is inside a popup/modal/dialog (or if the screenshot clearly shows one is open), include opening of that modal in preconditions (e.g., "\"Create Post\" modal is opened").
+     * If the action involves tables, lists, editing, or sorting, add a precondition that the table is populated with at least one record.
+     * If testing actions requiring specific roles or status transitions, mention them (e.g. "User has permission to create", "An item with 'Pending' status exists").
+   - Factual neutral context: Otherwise, state which screen/page is open (e.g. "\"Feed | LinkedIn\" page is open"). Keep preconditions brief, separate, and clear of URLs.
 
 3. STEPS & EXPECTED RESULTS (КРОКИ ТА ОЧІКУВАНІ РЕЗУЛЬТАТИ):
    - Write granular, actionable steps. Avoid collapsing multiple distinct user actions or validations into a single step.
