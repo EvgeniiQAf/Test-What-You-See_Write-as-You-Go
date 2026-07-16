@@ -128,14 +128,14 @@ function addScreenshotMessage(screenshotDataUrl) {
 
 function captureScreenshot() {
   return new Promise((resolve) => {
-    chrome.runtime.sendMessage({ type: "CAPTURE_VISIBLE_TAB" }, async (response) => {
+    chrome.runtime.sendMessage({ type: "CAPTURE_SCREENSHOT" }, async (response) => {
       if (chrome.runtime.lastError) {
         console.warn("Capture tab runtime error:", chrome.runtime.lastError.message);
         resolve(null);
         return;
       }
 
-      const dataUrl = response?.dataUrl || null;
+      const dataUrl = response?.screenshot || null;
       if (!dataUrl) {
         resolve(null);
         return;
