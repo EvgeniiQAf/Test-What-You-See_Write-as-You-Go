@@ -4,7 +4,16 @@ function loadConversationHistory() {
   try {
     const stored = localStorage.getItem(HISTORY_STORAGE_KEY);
     const parsed = stored ? JSON.parse(stored) : [];
-    return Array.isArray(parsed) ? parsed : [];
+    if (Array.isArray(parsed)) {
+      return parsed.map((item) => {
+        const text = String(item.content || "").trim();
+        return {
+          ...item,
+          content: text.length > 500 ? text.slice(0, 500) + "... (truncated)" : text,
+        };
+      });
+    }
+    return [];
   } catch (error) {
     console.warn("Failed to load conversation history:", error);
     return [];
@@ -20,9 +29,11 @@ function saveConversationHistory(history) {
 }
 
 function pushHistory(role, content) {
+  const textContent = String(content || "").trim();
+  const cleaned = textContent.length > 500 ? textContent.slice(0, 500) + "... (truncated)" : textContent;
   window.conversationHistory = [...window.conversationHistory, {
     role,
-    content: String(content || ""),
+    content: cleaned,
   }].slice(-MAX_HISTORY_ITEMS);
 
   saveConversationHistory(window.conversationHistory);

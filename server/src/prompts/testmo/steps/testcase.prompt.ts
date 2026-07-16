@@ -20,7 +20,11 @@ export const buildTestCasePrompt = (input: GenerateTestCasesInput): string => {
   const singleComprehensiveMode = isSingleComprehensiveRequest(combinedText);
   const compactHistory = (input.conversationHistory || [])
     .slice(-10)
-    .map((item) => `${item.role.toUpperCase()}: ${item.content}`)
+    .map((item) => {
+      const content = String(item.content || "").trim();
+      const truncated = content.length > 500 ? content.slice(0, 500) + "... (truncated)" : content;
+      return `${item.role.toUpperCase()}: ${truncated}`;
+    })
     .join("\n");
   const preferenceProfile = input.preferenceProfile || {};
   const preferenceNotes = buildPreferenceNotesContext(input);

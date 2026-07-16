@@ -48,10 +48,14 @@ export class ChatService {
         role: "system",
         content: `Current context:\n${contextLines}`,
       },
-      ...history.slice(-10).map((item): LlmMessage => ({
-        role: item.role as "user" | "assistant",
-        content: item.content,
-      })),
+      ...history.slice(-10).map((item): LlmMessage => {
+        const content = String(item.content || "").trim();
+        const truncated = content.length > 500 ? content.slice(0, 500) + "... (truncated)" : content;
+        return {
+          role: item.role as "user" | "assistant",
+          content: truncated,
+        };
+      }),
       {
         role: "user",
         content: userMessageContent,
