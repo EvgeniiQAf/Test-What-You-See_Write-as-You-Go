@@ -29,7 +29,7 @@ const countWordMap: Record<string, number> = {
   десять: 10,
 };
 
-const countTokenPattern = /(?:\b\d{1,2}\b|\bone\b|\btwo\b|\bthree\b|\bfour\b|\bfive\b|\bsix\b|\bseven\b|\beight\b|\bnine\b|\bten\b|\bодин\b|\bодна\b|\bодне\b|\bдва\b|\bдві\b|\bтри\b|\bчотири\b|\bп['’]ять\b|\bшість\b|\bсім\b|\bвісім\b|\bдев['’]ять\b|\bдесять\b)/iu;
+const countTokenPattern = /(?:(?<!\p{L})\d{1,2}(?!\p{L})|(?<!\p{L})one(?!\p{L})|(?<!\p{L})two(?!\p{L})|(?<!\p{L})three(?!\p{L})|(?<!\p{L})four(?!\p{L})|(?<!\p{L})five(?!\p{L})|(?<!\p{L})six(?!\p{L})|(?<!\p{L})seven(?!\p{L})|(?<!\p{L})eight(?!\p{L})|(?<!\p{L})nine(?!\p{L})|(?<!\p{L})ten(?!\p{L})|(?<!\p{L})один(?!\p{L})|(?<!\p{L})одна(?!\p{L})|(?<!\p{L})одне(?!\p{L})|(?<!\p{L})два(?!\p{L})|(?<!\p{L})дві(?!\p{L})|(?<!\p{L})три(?!\p{L})|(?<!\p{L})чотири(?!\p{L})|(?<!\p{L})п['’]ять(?!\p{L})|(?<!\p{L})шість(?!\p{L})|(?<!\p{L})сім(?!\p{L})|(?<!\p{L})вісім(?!\p{L})|(?<!\p{L})дев['’]ять(?!\p{L})|(?<!\p{L})десять(?!\p{L}))/iu;
 
 const parseCountToken = (token: string): number | null => {
   const normalized = String(token || "").toLowerCase().replace(/[“”"']/g, "").trim();
@@ -145,7 +145,7 @@ export const extractRequestedCount = (prompt?: string): number => {
     return count;
   }
 
-  const explicitPattern = new RegExp(`(${countTokenPattern.source.replace(/^\/(.*)\/[a-z]*$/u, "$1")})\s*(test\s*cases?|tests?|тест\s*кейс(и|ів)?|тест(и|ів)?)`);
+  const explicitPattern = new RegExp(`(${countTokenPattern.source.replace(/^\/(.*)\/[a-z]*$/u, "$1")})\s*(test\s*cases?|tests?|тест\s*кейс(и|ів)?|тест(и|ів)?)`, "iu");
   const explicitMatch = text.match(explicitPattern);
 
   if (explicitMatch?.[1]) {
@@ -156,7 +156,7 @@ export const extractRequestedCount = (prompt?: string): number => {
     }
   }
 
-  const explicitStepsPattern = new RegExp(`(${countTokenPattern.source.replace(/^\/(.*)\/[a-z]*$/u, "$1")})\s*(steps?|крок(и|ів)?|степ(и|ів)?)`);
+  const explicitStepsPattern = new RegExp(`(${countTokenPattern.source.replace(/^\/(.*)\/[a-z]*$/u, "$1")})\s*(steps?|крок(и|ів)?|степ(и|ів)?)`, "iu");
   if (text.match(explicitStepsPattern)) {
     const numberedChecklistMatches = rawText.match(/^\s*\d+[\.)]\s+.+$/gmu) || [];
     if (numberedChecklistMatches.length > 0) {
