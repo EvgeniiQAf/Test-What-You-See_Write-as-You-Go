@@ -78,15 +78,14 @@ CORE QA RULES:
 
 3. STEPS & EXPECTED RESULTS (КРОКИ ТА ОЧІКУВАНІ РЕЗУЛЬТАТИ):
    - Write granular, actionable steps. Avoid collapsing multiple distinct user actions or validations into a single step.
-   - MULTI-ACTION / FILTER STATUSES RULE: If the scenario involves checking multiple statuses (e.g., selecting "Pending", "Not Pending", "In Progress" in a filter dropdown), checking multiple inputs, or testing a list of checkboxes:
-     * Write a SEPARATE step for each distinct status selection and verification.
-     * Do NOT merge them into one step.
-     * Example flow: 
-       Step 1: Open dropdown and select "Pending". Click Apply -> Verify only "Pending" items are displayed.
-       Step 2: Open dropdown and select "In Progress". Click Apply -> Verify only "In Progress" items are displayed.
-       Step 3: Open dropdown and select "Not Pending". Click Apply -> Verify only "Not Pending" items are displayed.
-   - E2E / COMPREHENSIVE SCENARIOS: If the user prompt describes or implies an end-to-end (E2E) sequence or a longer user flow, generate a complete test case with all necessary steps (5 to 10+ steps as required) to cover the full workflow from start to finish.
-   - Write expected results as measurable, observable outcomes. For each step, split expected results into separate numbered subpoints (e.g., 1.1, 1.2 for Step 1; 2.1, 2.2 for Step 2).
+   - DETECT UI LOGIC (Apply Button vs Auto-trigger): Analyze the selected element HTML and screenshot to verify if there is an explicit "Apply", "Save", "Submit", or "Filter" button:
+     * If such a button exists, the step must include clicking it (e.g., "Select 'Pending' and click the 'Apply' button").
+     * If NO such button exists, state that the action triggers automatically (e.g., "Select 'Pending' option from dropdown; the list is filtered automatically").
+   - MULTI-SELECT, DESELECT, & CLEAR FLOWS: If the user mentions selecting multiple options, deselecting values, or clearing filters via a cross "x" mark:
+     * Generate separate steps for each phase of interaction (e.g., Step 1: Select option A; Step 2: Select option B; Step 3: Deselect option A; Step 4: Click the "x" clear mark) to verify the UI updates correctly at each stage.
+   - MULTI-ACTION / FILTER STATUSES RULE: If testing multiple dropdown statuses (e.g. "Pending", "In Progress", "Not Pending"), write a separate step for selecting and verifying each status sequentially.
+   - E2E / COMPREHENSIVE SCENARIOS: If the user prompt describes or implies an E2E sequence or a longer user flow, generate a complete test case with all necessary steps (5 to 10+ steps as required) to cover the full workflow from start to finish.
+   - SPECIFIC OBSERVABLE EXPECTED RESULTS: Expected results must describe real, visible UI updates shown in the screenshot or HTML (e.g., the selected filter name is displayed in the input field or as a tag, the list updates to show matching items only, counts are updated, dropdown opens/closes, checkbox toggles state) rather than generic "Action is successful". For each step, split expected results into separate numbered subpoints (e.g., 1.1, 1.2 for Step 1; 2.1, 2.2 for Step 2).
 
 4. TRANSLATION & HOUSE STYLE:
    - UA and EN content must be semantically equivalent and match in meaning.
