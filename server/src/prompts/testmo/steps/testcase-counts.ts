@@ -129,7 +129,7 @@ export const inferRequestedCount = (input: GenerateTestCasesInput): number => {
     .map((value) => String(value || "").trim())
     .filter(Boolean).length;
 
-  const estimate = Math.max(1, Math.min(preferenceCap, Math.max(complexitySignals, labelSignals, 1)));
+  const estimate = Math.max(3, Math.min(preferenceCap, Math.max(complexitySignals, labelSignals, 3)));
 
   return estimate;
 };
@@ -163,7 +163,7 @@ export const extractRequestedCount = (prompt?: string): number => {
       return Math.min(numberedChecklistMatches.length, MAX_TEST_CASES);
     }
 
-    return MAX_TEST_CASES;
+    return 3;
   }
 
   const numberedChecklistMatches = rawText.match(/^\s*\d+[\.)]\s+.+$/gmu) || [];
@@ -171,5 +171,5 @@ export const extractRequestedCount = (prompt?: string): number => {
     return Math.min(numberedChecklistMatches.length, MAX_TEST_CASES);
   }
 
-  return MAX_TEST_CASES;
+  return 3;
 };
