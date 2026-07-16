@@ -74,6 +74,68 @@ function isLikelyTestRequest(text) {
   return testIntentPattern.test(normalized);
 }
 
+function compressHtml(htmlString) {
+  if (!htmlString) return "";
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlString, "text/html");
+    const root = doc.body;
+
+    function prune(node) {
+      if (node.nodeType === 1) { // ELEMENT_NODE
+        const tag = node.tagName.toLowerCase();
+        if (["script", "style", "svg", "path", "g", "rect", "circle", "polygon", "polyline", "line", "ellipse", "use", "symbol", "defs", "mask", "iframe", "noscript", "link", "meta"].includes(tag)) {
+          node.remove();
+          return;
+        }
+
+        if (tag === "tbody") {
+          const rows = Array.from(node.querySelectorAll("tr"));
+          if (rows.length > 2) {
+            rows.slice(2).forEach(r => r.remove());
+          }
+        }
+
+        if (tag === "ul" || tag === "ol") {
+          const items = Array.from(node.children).filter(c => c.tagName.toLowerCase() === "li");
+          if (items.length > 3) {
+            items.slice(3).forEach(item => item.remove());
+          }
+        }
+
+        const attributesToRemove = [];
+        for (let i = 0; i < node.attributes.length; i++) {
+          const attr = node.attributes[i].name;
+          if (attr.startsWith("data-") && !attr.startsWith("data-testid") && !attr.startsWith("data-qa")) {
+            attributesToRemove.push(attr);
+          } else if (attr === "style" || attr.startsWith("xmlns") || attr.startsWith("xml:")) {
+            attributesToRemove.push(attr);
+          }
+        }
+        attributesToRemove.forEach(attr => node.removeAttribute(attr));
+
+        const children = Array.from(node.childNodes);
+        children.forEach(child => prune(child));
+      } else if (node.nodeType === 3) { // TEXT_NODE
+        const txt = node.nodeValue || "";
+        if (txt.trim().length > 100) {
+          node.nodeValue = txt.slice(0, 100) + "...";
+        }
+      }
+    }
+
+    Array.from(root.childNodes).forEach(child => prune(child));
+    let cleaned = root.innerHTML.trim();
+    if (cleaned.length > 12000) {
+      cleaned = cleaned.slice(0, 12000) + "... (truncated due to size)";
+    }
+    return cleaned;
+  } catch (err) {
+    console.warn("HTML compression error:", err);
+    return htmlString.slice(0, 8000) + "... (fallback truncation)";
+  }
+}
+
 function normalizeSelectionItem(item) {
   return {
     tag: normalizeStringValue(item?.tag),
@@ -84,7 +146,7 @@ function normalizeSelectionItem(item) {
     className: Array.isArray(item?.className)
       ? item.className.map((value) => normalizeStringValue(value)).filter(Boolean)
       : normalizeStringValue(item?.className),
-    outerHTML: normalizeStringValue(item?.outerHTML),
+    outerHTML: compressHtml(normalizeStringValue(item?.outerHTML)),
     url: normalizeStringValue(item?.url),
     pageTitle: normalizeStringValue(item?.pageTitle),
   };
