@@ -1,4 +1,4 @@
-import { GenerateTestCasesInput } from "../validations/generate.validation";
+import { GenerateTestCasesInput } from "../../../validations/generate.validation";
 
 export const buildUiLabelContext = (input: GenerateTestCasesInput): string => {
   return [
@@ -30,7 +30,7 @@ export const buildSelectedElementsContext = (input: GenerateTestCasesInput): str
 export const buildPreferenceNotesContext = (input: GenerateTestCasesInput): string => {
   const preferenceProfile = input.preferenceProfile || {};
   const preferenceNotes = (preferenceProfile.notes || [])
-    .map((note) => String(note || "").trim())
+    .map((note: string) => String(note || "").trim())
     .filter(Boolean)
     .slice(0, 5);
 
@@ -38,5 +38,5 @@ export const buildPreferenceNotesContext = (input: GenerateTestCasesInput): stri
     return "- N/A";
   }
 
-  return preferenceNotes.map((note) => `- ${note}`).join("\n");
+  return preferenceNotes.map((note: string) => `- ${note}`).join("\n");
 };

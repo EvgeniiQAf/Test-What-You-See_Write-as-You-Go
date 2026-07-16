@@ -18,7 +18,8 @@ export class TestmoProvider implements TmsProvider {
     const projectId = Number(this.configService.testmoProjectId || "1");
     const folderId = this.getSuiteIdentifier();
 
-    if (!folderId || folderId <= 0) {
+    const numericFolderId = Number(folderId);
+    if (!numericFolderId || numericFolderId <= 0) {
       throw new Error("TESTMO_FOLDER_ID is missing or invalid in .env");
     }
 
