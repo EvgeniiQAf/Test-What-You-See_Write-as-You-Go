@@ -90,6 +90,7 @@ PROFESSIONAL QA DOCUMENTATION STANDARDS & RULES:
      * Generate separate steps for each phase of interaction (e.g., Step 1: Select option A; Step 2: Select option B; Step 3: Deselect option A; Step 4: Click the "x" clear mark) to verify the UI updates correctly at each stage.
    - MULTI-ACTION / FILTER STATUSES RULE: If testing multiple dropdown statuses (e.g. "Pending", "In Progress", "Not Pending"), write a separate step for selecting and verifying each status sequentially.
    - E2E / COMPREHENSIVE SCENARIOS: If the user prompt describes or implies an E2E sequence or a longer user flow, generate a complete test case with all necessary steps (5 to 10+ steps as required) to cover the full workflow from start to finish.
+   - PRESERVE USER CHECKLISTS: If the user prompt lists specific fields, columns, checks, or checklist items (e.g., 22 columns/items to check), you MUST generate a separate, dedicated step and expected result for every single item listed. Do NOT group, summarize, skip, or collapse these items into fewer steps. If the user's checklist contains 22 items, write exactly 22 steps in the test case, covering each one in order.
 
 4. EXPECTED RESULTS (ОЧІКУВАНІ РЕЗУЛЬТАТИ) - MEASURABLE OUTCOMES:
    - Describe the exact, observable state change of the system after the corresponding step action (e.g. visual elements displayed, page redirects, field highlights, active/disabled states).
