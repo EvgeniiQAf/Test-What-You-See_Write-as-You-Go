@@ -3,7 +3,7 @@ console.log("Detached floating popup window loaded");
 const root = document.getElementById("bgt-app-root");
 if (root) {
   root.innerHTML = mainPanelHtml;
-  setupPresetListeners();
+  initializeUiPanelListeners();
 }
 
 // Adjust UI for standalone window mode

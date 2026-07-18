@@ -20,6 +20,99 @@ function showPanel() {
   if (input) input.focus();
 }
 
+function initializeUiPanelListeners() {
+  const panelHeader = document.getElementById("bgt-header");
+  const panel = document.getElementById("bgt-app-root") || document.querySelector("div[style*='z-index: 2147483647']");
+  const closeButton = document.getElementById("bgt-close");
+  const reopenButton = document.getElementById("bgt-reopen");
+  const input = document.getElementById("bgt-input");
+  const generateTestsCheckbox = document.getElementById("bgt-generate-tests");
+  const addTestButton = document.getElementById("bgt-add-test");
+  const sendButton = document.getElementById("bgt-send");
+  const toggleSettingsButton = document.getElementById("bgt-toggle-settings");
+  const settingsPanel = document.getElementById("bgt-settings-panel");
+  const settingFormat = document.getElementById("bgt-setting-format");
+  const settingLang = document.getElementById("bgt-setting-lang");
+  const settingLlm = document.getElementById("bgt-setting-llm");
+  const settingRules = document.getElementById("bgt-setting-rules");
+
+  if (panelHeader && panel) {
+    setupDragAndDrop(panelHeader, panel);
+  }
+  setupPresetListeners();
+  applySavedSettingsToUi();
+
+  closeButton?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    hidePanel();
+  });
+
+  reopenButton?.addEventListener("click", () => {
+    showPanel();
+  });
+
+  toggleSettingsButton?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    if (!settingsPanel) return;
+    const isHidden = settingsPanel.style.display === "none";
+    settingsPanel.style.display = isHidden ? "flex" : "none";
+    toggleSettingsButton.style.background = isHidden ? "#e5e7eb" : "#fff";
+  });
+
+  generateTestsCheckbox?.addEventListener("change", (event) => {
+    setTestModeHint(event.target.checked, "manual");
+  });
+
+  settingFormat?.addEventListener("change", () => {
+    setTestModeHint(generateTestsCheckbox?.checked, "manual");
+  });
+
+  [settingFormat, settingLang, settingLlm].forEach((el) => {
+    el?.addEventListener("change", () => {
+      if (!settingFormat || !settingLang || !settingLlm || !settingRules) return;
+      saveSettings({
+        format: settingFormat.value,
+        lang: settingLang.value,
+        llm: settingLlm.value,
+        rules: settingRules.value,
+      });
+    });
+  });
+
+  settingRules?.addEventListener("input", () => {
+    if (!settingFormat || !settingLang || !settingLlm || !settingRules) return;
+    saveSettings({
+      format: settingFormat.value,
+      lang: settingLang.value,
+      llm: settingLlm.value,
+      rules: settingRules.value,
+    });
+  });
+
+  sendButton?.addEventListener("click", () => {
+    sendPrompt();
+  });
+
+  addTestButton?.addEventListener("click", insertTestLabel);
+  updateAddTestButtonLabel();
+
+  input?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      sendPrompt();
+    }
+  });
+
+  input?.addEventListener("focus", () => {
+    setStatus("input focused", "#15803d");
+  }, true);
+
+  input?.addEventListener("mousedown", (event) => {
+    event.stopPropagation();
+  });
+}
+
 function openFloatingWindow(screenX, screenY) {
   hidePanel();
   chrome.runtime.sendMessage({

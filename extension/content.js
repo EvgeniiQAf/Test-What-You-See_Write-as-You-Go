@@ -75,79 +75,10 @@ const settingLang = document.getElementById("bgt-setting-lang");
 const settingLlm = document.getElementById("bgt-setting-llm");
 const settingRules = document.getElementById("bgt-setting-rules");
 
-// Load stored settings and config
+// Initialize state & panel listeners
 window.conversationHistory = loadConversationHistory();
 void loadTmsConfig();
-applySavedSettingsToUi();
-
-// Drag & drop panel functionality
-setupDragAndDrop(panelHeader, panel);
-
-// Listeners for UI components
-closeButton?.addEventListener("click", (event) => {
-  event.preventDefault();
-  event.stopPropagation();
-  hidePanel();
-});
-
-reopenButton?.addEventListener("click", () => {
-  showPanel();
-});
-
-toggleSettingsButton?.addEventListener("click", (event) => {
-  event.stopPropagation();
-  const isHidden = settingsPanel.style.display === "none";
-  settingsPanel.style.display = isHidden ? "flex" : "none";
-  toggleSettingsButton.style.background = isHidden ? "#e5e7eb" : "#fff";
-});
-
-generateTestsCheckbox?.addEventListener("change", (event) => {
-  setTestModeHint(event.target.checked, "manual");
-});
-
-settingFormat?.addEventListener("change", () => {
-  setTestModeHint(generateTestsCheckbox.checked, "manual");
-});
-
-[settingFormat, settingLang, settingLlm].forEach(el => {
-  el?.addEventListener("change", () => {
-    saveSettings({
-      format: settingFormat.value,
-      lang: settingLang.value,
-      llm: settingLlm.value,
-      rules: settingRules.value,
-    });
-  });
-});
-
-settingRules?.addEventListener("input", () => {
-  saveSettings({
-    format: settingFormat.value,
-    lang: settingLang.value,
-    llm: settingLlm.value,
-    rules: settingRules.value,
-  });
-});
-
-sendButton?.addEventListener("click", sendPrompt);
-
-addTestButton?.addEventListener("click", insertTestLabel);
-updateAddTestButtonLabel();
-
-input?.addEventListener("keydown", (event) => {
-  if (event.key === "Enter" && !event.shiftKey) {
-    event.preventDefault();
-    sendPrompt();
-  }
-});
-
-input?.addEventListener("focus", () => {
-  setStatus("input focused", "#15803d");
-}, true);
-
-input?.addEventListener("mousedown", (event) => {
-  event.stopPropagation();
-});
+initializeUiPanelListeners();
 
 // Capture keyboard events inside panel to prevent host page shortcuts interception
 const isolatePanelKeyboardEvent = (event) => {

@@ -95,6 +95,13 @@ PROFESSIONAL QA DOCUMENTATION STANDARDS & RULES:
    - MULTI-ACTION / FILTER STATUSES RULE: If testing multiple dropdown statuses (e.g. "Pending", "In Progress", "Not Pending"), write a separate step for selecting and verifying each status sequentially.
    - E2E / COMPREHENSIVE SCENARIOS: If the user prompt describes or implies an E2E sequence or a longer user flow, generate a complete test case with all necessary steps (5 to 10+ steps as required) to cover the full workflow from start to finish.
    - CONTEXT-BASED STEP GRANULARITY: Analyze the user's prompt, checklist, or described checklist columns dynamically. Decide the most logical number of steps to cover all specified items. If the user lists specific fields, columns, or checks to verify, do not overly compress them into a few generic steps. Instead, write granular steps that follow the structure of the user's request so that the test case remains clear, readable, and covers the described scenarios thoroughly.
+   - INVALID / BOUNDARY DATA ENTRY INTENT RULE: When writing steps for entering invalid search queries, non-matching data, boundary values, special characters, or incorrect field formats:
+     * ALWAYS explicitly state the test intent/category in the step description first, followed by the specific example input in parentheses.
+     * DO NOT write step descriptions that only state literal raw text like "Enter '!@#' in Search field".
+     * UA Correct Format: "Введіть невалідні дані / невалідний пошуковий запит (наприклад, \"!@#\") у поле \"Search\"."
+     * EN Correct Format: "Enter an invalid search query (e.g., \"!@#\") into \"Search\" field."
+     * UA Correct Format: "Введіть некоректний формат email (наприклад, \"test@domain\") у поле \"Email\"."
+     * EN Correct Format: "Enter an invalid email format (e.g., \"test@domain\") into \"Email\" field."
 
 4. EXPECTED RESULTS (ОЧІКУВАНІ РЕЗУЛЬТАТИ) - MEASURABLE OUTCOMES:
    - Describe the exact, observable state change of the system after the corresponding step action (e.g. visual elements displayed, page redirects, field highlights, active/disabled states).
