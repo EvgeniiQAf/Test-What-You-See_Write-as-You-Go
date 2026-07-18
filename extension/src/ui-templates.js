@@ -592,6 +592,14 @@ function addTestCaseCard(testCase, index) {
   actions.style.marginTop = "8px";
   actions.style.display = "flex";
   actions.style.gap = "6px";
+  const approveButton = document.createElement("button");
+  approveButton.textContent = "Approve";
+  approveButton.style.padding = "6px 10px";
+  approveButton.style.border = "none";
+  approveButton.style.borderRadius = "6px";
+  approveButton.style.background = "#15803d";
+  approveButton.style.color = "#fff";
+  approveButton.style.cursor = "pointer";
 
   const copyMarkdownButton = document.createElement("button");
   copyMarkdownButton.textContent = "📋 Copy Markdown";
