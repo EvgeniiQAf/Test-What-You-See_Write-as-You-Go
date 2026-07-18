@@ -40,12 +40,141 @@ function setupDragAndDrop(panelHeader, panel) {
   });
 }
 
+function setupPresetListeners() {
+  const presetsBar = document.getElementById("bgt-presets-bar");
+  if (!presetsBar) return;
+
+  const presetTexts = {
+    table: "1 тест на всі колонки таблиці. Окремий крок та ОР для кожного стовпця.",
+    dropdown: "Перевірити обрати декілька варіантів, диселект елемента та очищення через хрестик.",
+    form: "Перевірити обов'язкові поля, валідацію форматів та помилки при некоректних даних.",
+    edge: "Перевірити граничні значення (Min/Max length), спецсимволи та некоректне введення."
+  };
+
+  presetsBar.querySelectorAll(".bgt-preset-chip").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const input = document.getElementById("bgt-input");
+      const key = btn.getAttribute("data-preset");
+      const text = presetTexts[key];
+      if (input && text) {
+        input.value = input.value ? `${input.value}\n${text}` : text;
+        input.focus();
+      }
+    });
+  });
+}
+
+function renderEdgeCaseSuggestions() {
+  const suggestionsBar = document.getElementById("bgt-suggestions-bar");
+  if (!suggestionsBar) return;
+
+  const elements = window.selectedElements || [];
+  if (!elements.length) {
+    suggestionsBar.innerHTML = "";
+    return;
+  }
+
+  const latest = elements[elements.length - 1];
+  const tag = String(latest.tag || "").toLowerCase();
+  const html = String(latest.outerHTML || "").toLowerCase();
+  const suggestions = [];
+
+  if (tag === "table" || tag === "thead" || tag === "tbody" || html.includes("<table")) {
+    suggestions.push({ label: "💡 Verify All Columns", text: "1 тест на всі колонки таблиці. Окремий крок та ОР для кожного стовпця." });
+  }
+
+  if (tag === "select" || html.includes("role=\"combobox\"") || html.includes("dropdown") || html.includes("select")) {
+    suggestions.push({ label: "💡 Deselect & Clear", text: "Перевірити вибір декількох варіантів, зняття виділення елемента та закриття через хрестик." });
+  }
+
+  if (tag === "input" || tag === "textarea" || html.includes("required") || html.includes("maxlength") || html.includes("placeholder")) {
+    suggestions.push({ label: "💡 Required Field", text: "Перевірити спробу відправки порожнього обов'язкового поля та виведення повідомлення про помилку." });
+    suggestions.push({ label: "💡 Max Length / Boundary", text: "Перевірити граничні значення (Min/Max length) та введення неприпустимих спецсимволів." });
+  }
+
+  if (tag === "button" || tag === "a" || html.includes("role=\"button\"")) {
+    suggestions.push({ label: "💡 Hover & Active State", text: "Перевірити відображення кнопки, стан при наведенні (hover), доступність (enabled) та клікабельність." });
+  }
+
+  if (!suggestions.length) {
+    suggestions.push({ label: "💡 Standard Verification", text: "Перевірити відображення елемента, правильність назви та реакцію на взаємодію." });
+  }
+
+  suggestionsBar.innerHTML = suggestions
+    .map(
+      (s) => `<button type="button" class="bgt-suggestion-chip" data-suggestion-text="${escapeHtml(s.text)}" style="all:unset; cursor:pointer; background:#fef3c7; color:#92400e; padding:2px 6px; border-radius:4px; font-weight:500;">${escapeHtml(s.label)}</button>`
+    )
+    .join("");
+
+  suggestionsBar.querySelectorAll(".bgt-suggestion-chip").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const input = document.getElementById("bgt-input");
+      const textToAppend = btn.getAttribute("data-suggestion-text");
+      if (input && textToAppend) {
+        input.value = input.value ? `${input.value}\n${textToAppend}` : textToAppend;
+        input.focus();
+      }
+    });
+  });
+}
+
+function clearVisualSelectionBadges() {
+  document.querySelectorAll(".bgt-selection-badge-overlay").forEach((badge) => badge.remove());
+}
+
+function updateVisualSelectionBadges() {
+  clearVisualSelectionBadges();
+
+  const nodes = window.selectedDomNodes || [];
+  nodes.forEach((domNode, index) => {
+    if (!domNode || !domNode.getBoundingClientRect) return;
+
+    const rect = domNode.getBoundingClientRect();
+    if (rect.width === 0 && rect.height === 0) return;
+
+    const overlay = document.createElement("div");
+    overlay.className = "bgt-selection-badge-overlay";
+    overlay.style.position = "absolute";
+    overlay.style.top = `${rect.top + window.scrollY}px`;
+    overlay.style.left = `${rect.left + window.scrollX}px`;
+    overlay.style.width = `${Math.max(12, rect.width)}px`;
+    overlay.style.height = `${Math.max(12, rect.height)}px`;
+    overlay.style.border = "2px dashed #6366f1";
+    overlay.style.borderRadius = "4px";
+    overlay.style.boxShadow = "0 0 10px rgba(99, 102, 241, 0.5)";
+    overlay.style.pointerEvents = "none";
+    overlay.style.zIndex = "2147483646";
+    overlay.style.transition = "all 0.2s ease";
+
+    const badge = document.createElement("span");
+    badge.textContent = `${index + 1}`;
+    badge.style.position = "absolute";
+    badge.style.top = "-11px";
+    badge.style.left = "-11px";
+    badge.style.background = "linear-gradient(135deg, #6366f1, #8b5cf6)";
+    badge.style.color = "#ffffff";
+    badge.style.fontSize = "11px";
+    badge.style.fontWeight = "bold";
+    badge.style.padding = "2px 6px";
+    badge.style.borderRadius = "10px";
+    badge.style.boxShadow = "0 2px 5px rgba(0,0,0,0.3)";
+    badge.style.lineHeight = "1";
+
+    overlay.appendChild(badge);
+    document.body.appendChild(overlay);
+  });
+}
+
 function renderSelectedElementsSummary() {
+  updateVisualSelectionBadges();
+  renderEdgeCaseSuggestions();
+
   const selectedElementBlock = document.getElementById("bgt-selected-element");
   if (!selectedElementBlock) return;
 
   if (!window.selectedElements.length) {
     selectedElementBlock.textContent = "Елементи не вибрано";
+    clearVisualSelectionBadges();
     return;
   }
 

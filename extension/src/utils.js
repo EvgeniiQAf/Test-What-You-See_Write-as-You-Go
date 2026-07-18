@@ -125,15 +125,91 @@ function compressHtml(htmlString) {
     }
 
     Array.from(root.childNodes).forEach(child => prune(child));
-    let cleaned = root.innerHTML.trim();
-    if (cleaned.length > 12000) {
-      cleaned = cleaned.slice(0, 12000) + "... (truncated due to size)";
-    }
     return cleaned;
   } catch (err) {
     console.warn("HTML compression error:", err);
     return htmlString.slice(0, 8000) + "... (fallback truncation)";
   }
+}
+
+function formatTestCaseMarkdown(testCase) {
+  if (!testCase) return "";
+
+  const titleEn = testCase.title?.en || "";
+  const titleUa = testCase.title?.ua || "";
+  const preconditionsEn = (testCase.preconditions?.en || []).map((p) => `- ${p}`).join("\n");
+  const preconditionsUa = (testCase.preconditions?.ua || []).map((p) => `- ${p}`).join("\n");
+
+  const stepsFormatted = (testCase.steps || []).map((s, i) => {
+    const stepEn = s.step?.en || "";
+    const stepUa = s.step?.ua || "";
+    const expEn = (s.expectedResults?.en || []).map((e) => `  - ${e}`).join("\n");
+    const expUa = (s.expectedResults?.ua || []).map((e) => `  - ${e}`).join("\n");
+
+    return `### Step ${i + 1}
+**EN:** ${stepEn}
+**Expected:**
+${expEn}
+
+**UA:** ${stepUa}
+**Очікується:**
+${expUa}`;
+  }).join("\n\n");
+
+  return `# ${titleEn} / ${titleUa}
+
+## Preconditions (EN)
+${preconditionsEn || "N/A"}
+
+## Передумови (UA)
+${preconditionsUa || "N/A"}
+
+## Steps / Кроки
+${stepsFormatted}`;
+}
+
+function downloadTestCaseCsv(testCase) {
+  if (!testCase) return;
+
+  const rows = [
+    ["Title (EN)", "Title (UA)", "Preconditions (EN)", "Step #", "Step (EN)", "Step (UA)", "Expected (EN)", "Expected (UA)"]
+  ];
+
+  const titleEn = testCase.title?.en || "";
+  const titleUa = testCase.title?.ua || "";
+  const preEn = (testCase.preconditions?.en || []).join("; ");
+
+  (testCase.steps || []).forEach((s, idx) => {
+    const stepEn = s.step?.en || "";
+    const stepUa = s.step?.ua || "";
+    const expEn = (s.expectedResults?.en || []).join("; ");
+    const expUa = (s.expectedResults?.ua || []).join("; ");
+
+    rows.push([
+      idx === 0 ? titleEn : "",
+      idx === 0 ? titleUa : "",
+      idx === 0 ? preEn : "",
+      String(idx + 1),
+      stepEn,
+      stepUa,
+      expEn,
+      expUa
+    ]);
+  });
+
+  const csvContent = rows
+    .map((row) => row.map((field) => `"${String(field || "").replace(/"/g, '""')}"`).join(","))
+    .join("\r\n");
+
+  const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `test-case-${Date.now()}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 function normalizeSelectionItem(item) {

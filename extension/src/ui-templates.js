@@ -147,6 +147,27 @@ const mainPanelHtml = `
     Status: idle
   </div>
 
+  <div id="bgt-presets-bar" style="
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 6px;
+    font-size: 11px;
+  ">
+    <button type="button" class="bgt-preset-chip" data-preset="table" style="all:unset; cursor:pointer; background:#e0e7ff; color:#3730a3; padding:2px 6px; border-radius:4px; font-weight:500;">⚡ Table Columns</button>
+    <button type="button" class="bgt-preset-chip" data-preset="dropdown" style="all:unset; cursor:pointer; background:#e0e7ff; color:#3730a3; padding:2px 6px; border-radius:4px; font-weight:500;">⚡ Dropdown</button>
+    <button type="button" class="bgt-preset-chip" data-preset="form" style="all:unset; cursor:pointer; background:#e0e7ff; color:#3730a3; padding:2px 6px; border-radius:4px; font-weight:500;">⚡ Validation</button>
+    <button type="button" class="bgt-preset-chip" data-preset="edge" style="all:unset; cursor:pointer; background:#e0e7ff; color:#3730a3; padding:2px 6px; border-radius:4px; font-weight:500;">⚡ Edge Cases</button>
+  </div>
+
+  <div id="bgt-suggestions-bar" style="
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 6px;
+    font-size: 11px;
+  "></div>
+
   <textarea id="bgt-input" placeholder="Tasks: describe selected elements, then add Test 1:, Test 2: ..." style="
     width: 100%;
     height: 70px;
@@ -572,14 +593,45 @@ function addTestCaseCard(testCase, index) {
   actions.style.display = "flex";
   actions.style.gap = "6px";
 
-  const approveButton = document.createElement("button");
-  approveButton.textContent = "Approve";
-  approveButton.style.padding = "6px 10px";
-  approveButton.style.border = "none";
-  approveButton.style.borderRadius = "6px";
-  approveButton.style.background = "#15803d";
-  approveButton.style.color = "#fff";
-  approveButton.style.cursor = "pointer";
+  const copyMarkdownButton = document.createElement("button");
+  copyMarkdownButton.textContent = "📋 Copy Markdown";
+  copyMarkdownButton.style.padding = "6px 10px";
+  copyMarkdownButton.style.border = "1px solid #d1d5db";
+  copyMarkdownButton.style.borderRadius = "6px";
+  copyMarkdownButton.style.background = "#ffffff";
+  copyMarkdownButton.style.color = "#374151";
+  copyMarkdownButton.style.cursor = "pointer";
+
+  copyMarkdownButton.addEventListener("click", () => {
+    const md = formatTestCaseMarkdown(localTestCase);
+    navigator.clipboard.writeText(md).then(() => {
+      copyMarkdownButton.textContent = "✓ Copied!";
+      setStatus("copied to clipboard", "#15803d");
+      setTimeout(() => {
+        copyMarkdownButton.textContent = "📋 Copy Markdown";
+      }, 2000);
+    }).catch((err) => {
+      console.warn("Failed to copy markdown:", err);
+    });
+  });
+
+  const exportCsvButton = document.createElement("button");
+  exportCsvButton.textContent = "📄 Export CSV";
+  exportCsvButton.style.padding = "6px 10px";
+  exportCsvButton.style.border = "1px solid #d1d5db";
+  exportCsvButton.style.borderRadius = "6px";
+  exportCsvButton.style.background = "#ffffff";
+  exportCsvButton.style.color = "#374151";
+  exportCsvButton.style.cursor = "pointer";
+
+  exportCsvButton.addEventListener("click", () => {
+    downloadTestCaseCsv(localTestCase);
+    setStatus("exported to CSV", "#15803d");
+  });
+
+  actions.appendChild(approveButton);
+  actions.appendChild(copyMarkdownButton);
+  actions.appendChild(exportCsvButton);
 
   approveButton.addEventListener("click", async () => {
     approveButton.disabled = true;

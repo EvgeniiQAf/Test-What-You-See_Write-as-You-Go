@@ -31,6 +31,7 @@ panel.style.flexDirection = "column";
 panel.style.pointerEvents = "auto";
 
 panel.innerHTML = mainPanelHtml;
+setupPresetListeners();
 panelLayer.appendChild(panel);
 document.documentElement.appendChild(panelLayer);
 
@@ -194,6 +195,7 @@ document.addEventListener("click", async (event) => {
     pageTitle: document.title,
   });
 
+  window.selectedDomNodes = [...(window.selectedDomNodes || []), element];
   window.selectedElements = [...window.selectedElements, window.selectedElementData];
 
   let selectedScreenshot = await captureScreenshot();
@@ -228,3 +230,33 @@ document.addEventListener("click", async (event) => {
   console.log("Selection count saved locally:", window.selectedElements.length);
   console.log("Screenshot saved locally:", Boolean(selectedScreenshot));
 }, true);
+
+chrome.runtime.onMessage.addListener(async (message) => {
+  if (message.type === "COMMAND_TRIGGERED") {
+    if (message.command === "toggle-panel") {
+      const panelLayer = document.querySelector("div[style*='z-index: 2147483647']");
+      if (panelLayer && panelLayer.style.display === "none") {
+        showPanel();
+      } else {
+        hidePanel();
+      }
+    } else if (message.command === "quick-screenshot") {
+      let selectedScreenshot = await captureScreenshot();
+      selectedScreenshot = await compressScreenshotDataUrl(selectedScreenshot);
+      if (selectedScreenshot) {
+        window.selectedScreenshots = [
+          ...window.selectedScreenshots,
+          {
+            id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+            dataUrl: selectedScreenshot,
+            label: `Quick Screenshot ${window.selectedScreenshots.length + 1}`,
+            selected: true,
+          },
+        ];
+        renderSelectedScreenshotsSummary();
+        addMessage("assistant", "Captured quick tab screenshot via Alt+Shift+S.");
+        setStatus("quick screenshot captured", "#15803d");
+      }
+    }
+  }
+});

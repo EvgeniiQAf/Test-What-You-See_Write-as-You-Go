@@ -24,5 +24,21 @@
       ],
       "run_at": "document_start"
     }
-  ]
+  ],
+  "commands": {
+    "toggle-panel": {
+      "suggested_key": {
+        "default": "Alt+Shift+F",
+        "mac": "Alt+Shift+F"
+      },
+      "description": "Toggle extension panel"
+    },
+    "quick-screenshot": {
+      "suggested_key": {
+        "default": "Alt+Shift+S",
+        "mac": "Alt+Shift+S"
+      },
+      "description": "Quick screenshot active tab"
+    }
+  }
 }
