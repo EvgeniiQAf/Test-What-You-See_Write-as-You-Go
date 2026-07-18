@@ -20,19 +20,51 @@ function showPanel() {
   if (input) input.focus();
 }
 
+function openFloatingWindow(screenX, screenY) {
+  hidePanel();
+  chrome.runtime.sendMessage({
+    type: "OPEN_FLOATING_WINDOW",
+    screenX: screenX ?? (window.screenX + 100),
+    screenY: screenY ?? (window.screenY + 100),
+  });
+}
+
 function setupDragAndDrop(panelHeader, panel) {
   if (!panelHeader || !panel) return;
 
+  const detachBtn = document.getElementById("bgt-detach-window");
+  if (detachBtn) {
+    detachBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openFloatingWindow(e.screenX, e.screenY);
+    });
+  }
+
+  let autoDetached = false;
+
   panelHeader.addEventListener("mousedown", (event) => {
+    if (event.target?.id === "bgt-detach-window" || event.target?.id === "bgt-close" || event.target?.id === "bgt-toggle-settings") return;
     isDragging = true;
+    autoDetached = false;
     dragOffsetX = event.clientX - panel.offsetLeft;
     dragOffsetY = event.clientY - panel.offsetTop;
   });
 
   document.addEventListener("mousemove", (event) => {
     if (!isDragging) return;
-    panel.style.left = `${event.clientX - dragOffsetX}px`;
-    panel.style.top = `${event.clientY - dragOffsetY}px`;
+
+    const newLeft = event.clientX - dragOffsetX;
+    const newTop = event.clientY - dragOffsetY;
+
+    if (!autoDetached && (event.clientX < 15 || event.clientX > window.innerWidth - 15 || event.clientY < 15 || event.clientY > window.innerHeight - 15)) {
+      autoDetached = true;
+      isDragging = false;
+      openFloatingWindow(event.screenX, event.screenY);
+      return;
+    }
+
+    panel.style.left = `${newLeft}px`;
+    panel.style.top = `${newTop}px`;
   });
 
   document.addEventListener("mouseup", () => {

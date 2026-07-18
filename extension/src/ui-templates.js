@@ -4,6 +4,20 @@ const mainPanelHtml = `
   <div id="bgt-header" style="font-weight: 700; margin-bottom: 8px; cursor: move; user-select: none; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
     <span style="flex: 1; font-size: 13px;">QA Helper</span>
     <div style="display: flex; gap: 6px; align-items: center;">
+      <button id="bgt-detach-window" title="Detach into Floating Desktop Window" style="
+        border: 1px solid #d1d5db;
+        background: #fff;
+        color: #374151;
+        border-radius: 6px;
+        width: 24px;
+        height: 24px;
+        line-height: 20px;
+        text-align: center;
+        cursor: pointer;
+        font-size: 12px;
+        padding: 0;
+        flex: 0 0 auto;
+      ">↗️</button>
       <button id="bgt-toggle-settings" aria-label="Settings" style="
         border: 1px solid #d1d5db;
         background: #fff;

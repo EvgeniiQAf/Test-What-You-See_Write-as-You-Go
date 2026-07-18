@@ -80,6 +80,28 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
     return true;
   }
+
+  if (message.type === "OPEN_FLOATING_WINDOW") {
+    const left = Math.max(10, Math.round(message.screenX || 100));
+    const top = Math.max(10, Math.round(message.screenY || 100));
+
+    chrome.windows.create(
+      {
+        url: chrome.runtime.getURL("popup.html"),
+        type: "popup",
+        left: left,
+        top: top,
+        width: 520,
+        height: 640,
+        focused: true,
+      },
+      (createdWindow) => {
+        sendResponse({ ok: true, windowId: createdWindow?.id });
+      }
+    );
+
+    return true;
+  }
 });
 
 chrome.commands.onCommand.addListener((command) => {

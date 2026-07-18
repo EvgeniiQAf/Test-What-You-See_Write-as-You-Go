@@ -229,9 +229,23 @@ document.addEventListener("click", async (event) => {
   console.log("Selected element saved locally:", window.selectedElementData);
   console.log("Selection count saved locally:", window.selectedElements.length);
   console.log("Screenshot saved locally:", Boolean(selectedScreenshot));
+
+  chrome.runtime.sendMessage({
+    type: "SELECTION_UPDATED",
+    selectedElements: window.selectedElements,
+    selectedScreenshots: window.selectedScreenshots,
+  }).catch(() => {});
 }, true);
 
-chrome.runtime.onMessage.addListener(async (message) => {
+chrome.runtime.onMessage.addListener(async (message, _sender, sendResponse) => {
+  if (message.type === "GET_CURRENT_SELECTIONS") {
+    sendResponse({
+      selectedElements: window.selectedElements || [],
+      selectedScreenshots: window.selectedScreenshots || [],
+    });
+    return true;
+  }
+
   if (message.type === "COMMAND_TRIGGERED") {
     if (message.command === "toggle-panel") {
       const panelLayer = document.querySelector("div[style*='z-index: 2147483647']");
