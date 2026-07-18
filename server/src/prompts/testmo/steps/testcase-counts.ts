@@ -58,7 +58,7 @@ const hasExplicitCount = (text: string): boolean => {
   return new RegExp(`${countTokenPattern.source.replace(/^\/(.*)\/[a-z]*$/u, "$1")}\s*(?:test\s*cases?|tests?|тест\s*кейс(и|ів)?|тест(и|ів)?|steps?|крок(и|ів)?|степ(и|ів)?)`, "iu").test(text);
 };
 
-const oneTestRequestPattern = /(\b1\b\s*(super|single|big|main|overview|general|full|complete)?\s*(test|тест)|one\s+(super|single|big|main|full|complete)?\s*test|один\s+(супер|єдиний|головний|великий|повний)?\s*тест)/iu;
+const oneTestRequestPattern = /(?:(?<!\p{L})(?:1|one|один|одна|одне|єдиний|single|a)\s+(?:super|single|big|main|overview|general|full|complete\s+)?(?:test|тест)(?:-?\s*кейс)?(?!\p{L})|(?<!\p{L})(?:написати|напиши|зробити|зроби|створити|створи|згенерувати|згенеруй)\s+(?:1\s+|один\s+|єдиний\s+)?(?:test|тест)(?:-?\s*кейс)?(?!\p{L})|(?<!\p{L})тест\s+на(?!\p{L}))/iu;
 
 const countDistinctSignals = (text: string): number => {
   const signals = [
