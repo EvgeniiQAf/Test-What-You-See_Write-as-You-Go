@@ -1,115 +1,101 @@
 # Test-What-You-See (TWYS) — Write-as-You-Go 🚀
 
-> Turn visual exploratory testing into living test documentation. Select UI elements, describe test intent, and let AI generate structured test cases (Classic Steps & BDD Gherkin) synced directly to **Testomat.io** & **Testmo**.
+> Інструмент для перетворення дослідницького тестування у структуровані тест-кейси прямо з інтерфейсу додатка. Виділяйте елементи верстки, описуйте промпти та миттєво зберігайте готові тести (Classic Steps та BDD Gherkin) у **Testomat.io**.
 
 ---
 
-## ✨ Features & Highlights
+## ✨ Особливості та можливості / Features
 
-- **🎯 Visual Element Selection (`Shift + Click`):** Click any element on any live website to inspect its DOM, HTML attributes, and screenshots with real-time numbered badges (`1️⃣`, `2️⃣`, `3️⃣`).
-- **🪟 Auto-Detachable Floating Desktop Window:** Drag the panel header to the edge of Chrome to pop it out into an independent OS window on a 2nd or 3rd monitor.
-- **💡 AI Edge Case Suggestions & Quick Presets:** Smart chips (`⚡ Table Columns`, `⚡ Dropdown`, `💡 Required Field`, `💡 Max Length / Boundary`) dynamically suggest QA edge cases based on inspectable HTML tags.
-- **🚀 Native Integration with Testomat.io & Testmo:** Save approved test cases directly into your test suites in **Testomat.io** or **Testmo** with one click.
-- **📋 Flexible Export:** Copy clean Markdown formatted test cases for Jira / Slack, or export structured CSV files for offline reporting.
-- **🛡️ Token Compression & Rate Limit Protection:** Built-in HTML pruning and message history truncation keep LLM prompts fast, compact, and immune to 429 TPM errors.
-
----
-
-## 🛠️ Quick Start & Installation
-
-### 1. Prerequisites
-- **Node.js**: v18.x or higher
-- **Browser**: Google Chrome or Chromium-based browser
-- **AI Credentials**: OpenAI API Key or Anthropic Claude API Key
+- **🎯 Візуальне виділення елементів (`Shift + Click`):** Клікайте по будь-яких кнопках, формах чи таблицях на сайті. Розширення підсвічує їх та нумерує маркерами (`1️⃣`, `2️⃣`, `3️⃣`).
+- **🪟 Десктопне вікно, що літає (Auto-Detach Drag):** Перетягніть панель розширення до краю вікна браузера або натисніть кнопку **`↗️`** — і вона перетвориться на окреме плаваюче вікно ОС для роботи на 2-му чи 3-му моніторі.
+- **💡 Розумні підказки та пресети:** Швидкі шаблони (`⚡ Table Columns`, `⚡ Dropdown`, `💡 Required Field`) аналізують HTML-код виділеного елемента та автоматично пропонують релевантні тест-сценарії.
+- **🚀 Нативна інтеграція з Testomat.io:** Зберігайте затверджені тести безпосередньо у ваші тест-сьюти в один клік.
+- **📋 Експорт та буфер обміну:** Копіюйте красивий Markdown-формат (для Jira чи Slack) або завантажуйте готові CSV файли.
+- **🛡️ Повна конфіденційність:** Усі запити, скріншоти та ключі обробляються виключно через ваш локальний сервер.
 
 ---
 
-### 2. Backend Server Setup (`/server`)
+## 🛠️ Покрокова інструкція із встановлення та запуску
 
-1. Clone the repository:
+### 1. Попередні вимоги (Prerequisites)
+Перед встановленням переконайтеся, що на вашому комп'ютері встановлено:
+* **Node.js** (версія v18.x або новіша). [Завантажити з офіційного сайту](https://nodejs.org/).
+* Браузер **Google Chrome** (або будь-який на базі Chromium).
+
+---
+
+### 2. Налаштування бекенд-сервера (`/server`)
+
+1. Відкрийте термінал та клонуйте цей репозиторій:
    ```bash
    git clone https://github.com/EvgeniiQAf/Test-What-You-See.-Write-as-You-Go..git
+   ```
+2. Перейдіть до папки з сервером:
+   ```bash
    cd Test-What-You-See.-Write-as-You-Go./server
    ```
-
-2. Install dependencies:
+3. Встановіть залежності проекту:
    ```bash
    npm install
    ```
-
-3. Create environment configuration file `.env`:
+4. Створіть файл конфігурації `.env` на основі прикладу:
    ```bash
    cp .env.example .env
    ```
-
-4. Configure your `.env` variables:
+5. Відкрийте створений файл `.env` у текстовому редакторі та додайте ваші API ключі:
    ```env
-   # Server Port
    PORT=3000
 
-   # Active LLM Provider: "openai" | "claude"
+   # Провайдер ШІ: "openai" або "claude"
    ACTIVE_LLM=openai
-   OPENAI_API_KEY="sk-proj-YOUR_OPENAI_KEY_HERE"
+   OPENAI_API_KEY="sk-proj-ВАШ_OPENAI_API_KEY"
 
-   # Active Test Management System (TMS): "testomat" | "testmo"
+   # Інтеграція з TMS
    ACTIVE_TMS=testomat
-
-   # Testomat.io API Key
-   TESTOMAT_API_KEY="tstmt_YOUR_TESTOMAT_KEY_HERE"
-
-   # Testmo Settings (Optional if using Testmo)
-   TESTMO_URL="https://yourcompany.testmo.net"
-   TESTMO_API_KEY="YOUR_TESTMO_API_KEY"
+   TESTOMAT_API_KEY="ВАШ_TESTOMAT_IO_API_KEY"
    ```
-
-5. Start the backend server in development mode:
+6. Запустіть сервер:
    ```bash
    npm run dev
    ```
-   *The server will run on `http://localhost:3000`.*
+   *Якщо все налаштовано правильно, у терміналі з'явиться повідомлення: `Server running on port 3000`.*
 
 ---
 
-### 3. Chrome Extension Setup (`/extension`)
+### 3. Встановлення Chrome-розширення (`/extension`)
 
-1. Open **Google Chrome** and navigate to `chrome://extensions`.
-2. In the top-right corner, turn ON **Developer mode** (Режим розробника).
-3. Click **Load unpacked** (Завантажити распаковане розширення).
-4. Select the `extension` folder from this repository.
-5. The **Browser GPT Testmo Helper** extension icon will appear in your Chrome toolbar!
-
----
-
-## 🎮 How to Use
-
-1. **Open any web application** in Chrome (e.g., LinkedIn, Jira, or your app).
-2. **Select Elements:** Hold `Shift` and `Click` any UI button, input, or table column.
-3. **Use Presets or Type Prompt:** Click a preset button like `⚡ Table Columns` or `💡 Required Field`, or type your custom instruction (e.g., *"треба написати 1 тест на цю кнопку"*).
-4. **Generate & Edit:** Review generated test cases in Ukrainian & English. Edit titles, preconditions, or steps inline inside preview cards.
-5. **Push or Export:** Click **Approve** to push directly to **Testomat.io** / **Testmo**, or click **📋 Copy Markdown** / **📄 Export CSV**.
-6. **Pop Out Panel:** Drag the top header of the extension panel to the edge of Chrome or click **`↗️`** to move the panel onto a 2nd screen!
+Щоб додати розширення до вашого браузера:
+1. Відкрийте **Google Chrome** та введіть у рядок адреси: `chrome://extensions/` (або перейдіть у Меню -> Додаткові інструменти -> Розширення).
+2. У правому верхньому кутку сторінки увімкніть перемикач **Режим розробника (Developer mode)**.
+3. У лівому верхньому кутку натисніть кнопку **Завантажити розпаковане розширення (Load unpacked)**.
+4. У діалоговому вікні, що відкрилося, виберіть папку `extension` з вашого клонованого репозиторію.
+5. Готово! Іконка розширення з'явиться на панелі інструментів вашого браузера.
 
 ---
 
-## ⌨️ Keyboard Shortcuts
+## 🎮 Як користуватися інструментом
 
-| Shortcut | Action |
+1. Перейдіть на будь-який сайт (наприклад, вашу тестову сторінку).
+2. **Виділіть елементи:** Затисніть клавішу `Shift` та клікніть по кнопці чи формі на сторінці.
+3. **Напишіть промпт:** Натисніть на один із пресетів швидких перевірок над полем введення або напишіть промпт своїми словами (наприклад: *"напиши тест на цю кнопку"*).
+4. **Перегляньте результат:** Система згенерує тест-кейс українською та англійською мовами. Ви можете редагувати тексти кроків прямо у картках.
+5. **Збережіть у Testomat.io:** Натисніть кнопку **Approve**, і тест миттєво з'явиться у вашому кабінеті **Testomat.io**. Також ви можете скопіювати Markdown або скачати CSV.
+
+---
+
+## ⌨️ Гарячі клавіші (Shortcuts)
+
+| Комбінація | Дія |
 | :--- | :--- |
-| `Shift + Click` | Select UI element on page |
-| `Alt + Shift + F` | Toggle extension panel open / closed |
-| `Alt + Shift + S` | Capture instant tab screenshot |
+| `Shift + Click` | Виділити елемент на веб-сторінці |
+| `Alt + Shift + F` | Згорнути / розгорнути панель розширення |
+| `Alt + Shift + S` | Зробити миттєвий скріншот активної вкладки |
 
 ---
 
-## 🧪 Running Automated Tests
+## 🧪 Запуск тестів сервера
 
 ```bash
 cd server
 npm test
 ```
-
----
-
-## 📝 License
-
-Distributed under the MIT License. See `LICENSE` for details.
