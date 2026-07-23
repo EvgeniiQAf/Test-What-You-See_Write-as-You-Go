@@ -28,11 +28,11 @@
 
 1. Відкрийте термінал та клонуйте цей репозиторій:
    ```bash
-   git clone https://github.com/EvgeniiQAf/Test-What-You-See.-Write-as-You-Go..git
+   git clone https://github.com/EvgeniiQAf/Test-What-You-See_Write-as-You-Go.git
    ```
 2. Перейдіть до папки з сервером:
    ```bash
-   cd Test-What-You-See.-Write-as-You-Go./server
+   cd Test-What-You-See_Write-as-You-Go/server
    ```
 3. Встановіть залежності проекту:
    ```bash
