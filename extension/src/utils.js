@@ -234,13 +234,25 @@ function normalizeSelectionList(items) {
 
 function sendRuntimeMessage(payload) {
   return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage(payload, (response) => {
-      if (chrome.runtime.lastError) {
-        reject(new Error(chrome.runtime.lastError.message));
-        return;
+    try {
+      chrome.runtime.sendMessage(payload, (response) => {
+        if (chrome.runtime.lastError) {
+          let msg = chrome.runtime.lastError.message;
+          if (msg.includes("Extension context invalidated")) {
+            msg = "Розширення було оновлено в браузері. Перезавантажте поточну сторінку (F5).";
+          }
+          reject(new Error(msg));
+          return;
+        }
+        resolve(response || {});
+      });
+    } catch (error) {
+      let msg = error.message;
+      if (msg.includes("Extension context invalidated")) {
+        msg = "Розширення було оновлено в браузері. Перезавантажте поточну сторінку (F5).";
       }
-      resolve(response || {});
-    });
+      reject(new Error(msg));
+    }
   });
 }
 

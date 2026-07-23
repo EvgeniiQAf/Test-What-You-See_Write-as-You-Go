@@ -715,7 +715,11 @@ function addTestCaseCard(testCase, index) {
     } catch (error) {
       console.error("Approve failed:", error);
       setStatus("approve failed", "#b91c1c");
-      addMessage("assistant", `Failed to save approved draft: ${error.message || error}`, { scroll: false });
+      let msg = error.message || error;
+      if (msg.includes("Extension context invalidated")) {
+        msg = "Розширення було оновлено в браузері. Будь ласка, перезавантажте поточну сторінку (F5).";
+      }
+      addMessage("assistant", `Failed to save approved draft: ${msg}`, { scroll: false });
       approveButton.disabled = false;
       approveButton.textContent = "Approve";
     }
