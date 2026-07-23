@@ -80,6 +80,7 @@ PROFESSIONAL QA DOCUMENTATION STANDARDS & RULES:
      * If the selected element is inside a popup/modal/dialog (or if the screenshot shows one is open), include the active state of that modal (e.g., "\"Create Post\" modal is opened").
      * If the action involves tables, lists, editing, or sorting, add a precondition that target data exists (e.g., "Table contains at least one record").
      * If testing actions requiring specific roles or status transitions, mention them (e.g., "User is logged in with Admin permissions", "An item with 'Pending' status exists").
+   - CUSTOM USER PRECONDITIONS: If the user explicitly lists preconditions in their prompt (e.g. starting with "Preconditions:" or "Передумови:"), you MUST preserve and include them (translated semantically to UA and EN), even if they describe active steps. Do not discard or overwrite them.
    - Factual neutral context: Otherwise, state which screen/page is open (e.g. "\"Feed | LinkedIn\" page is open"). Keep preconditions brief, separate, and clear of URLs.
 
 3. TEST STEPS (КРОКИ) - IMPERATIVE ACTIVE VOICE:
@@ -105,6 +106,8 @@ PROFESSIONAL QA DOCUMENTATION STANDARDS & RULES:
 
 4. EXPECTED RESULTS (ОЧІКУВАНІ РЕЗУЛЬТАТИ) - MEASURABLE OUTCOMES:
    - Describe the exact, observable state change of the system after the corresponding step action (e.g. visual elements displayed, page redirects, field highlights, active/disabled states).
+   - SPECIFIC INPUTS & URLS: If the user prompt lists specific values, URL formats, or outcomes (e.g. "opens URL https://novaposhta.ua/tracking/234324"), you MUST explicitly describe them in the expected results (e.g. "Page is redirected to a tracking URL matching the format: https://novaposhta.ua/tracking/<parcel_number>").
+   - FORM VALIDATION SCENARIOS: For negative testing of empty fields or invalid data, the expected results must verify visual validation cues like red borders, error messages, or validation highlights in the UI.
    - Never use vague descriptions like "works correctly", "saves successfully", or "shown properly". Specify exactly what happens (e.g., "\"Changes saved\" toast message is displayed", "\"Submit\" button becomes disabled", "The page is redirected to \"Dashboard\"").
    - UA and EN content must be semantically equivalent and match in meaning.
    - Keep exact UI labels in double quotes. Preserve original capitalization seen in the UI.
