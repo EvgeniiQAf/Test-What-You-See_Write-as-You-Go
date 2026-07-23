@@ -139,6 +139,9 @@ ${selectedElementsContext}
 User prompt:
 ${input.userPrompt || "N/A"}
 
+Additional custom instructions or persistent preconditions:
+${input.customInstructions || "N/A"}
+
 Preference profile (persisted from prior chat turns):
 ${JSON.stringify(preferenceProfile, null, 2)}
 

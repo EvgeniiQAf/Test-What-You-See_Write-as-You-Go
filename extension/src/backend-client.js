@@ -90,6 +90,14 @@ async function sendPrompt() {
   const language = settingLang?.value || "default";
   const customInstructions = settingRules?.value || "";
 
+  // Retrieve stored session preconditions and inject them if new ones are not explicitly written in the prompt
+  let finalCustomInstructions = customInstructions;
+  const lastPreconditions = localStorage.getItem("bgt-last-preconditions") || "";
+  const hasCurrentPreconditions = /(?:preconditions|передумови|передумова|precondition)\s*:/iu.test(userPrompt);
+  if (!hasCurrentPreconditions && lastPreconditions) {
+    finalCustomInstructions = `Preconditions:\n${lastPreconditions}\n\n${customInstructions}`.trim();
+  }
+
   const payload = shouldGenerateTests
     ? {
       html: primarySelection?.outerHTML || "",
@@ -106,9 +114,8 @@ async function sendPrompt() {
       conversationHistory: window.conversationHistory,
       preferenceProfile,
       preferredLlm,
-      format,
       language,
-      customInstructions,
+      customInstructions: finalCustomInstructions,
     }
     : {
       userPrompt,
@@ -127,7 +134,7 @@ async function sendPrompt() {
       preferredLlm,
       format,
       language,
-      customInstructions,
+      customInstructions: finalCustomInstructions,
     };
 
   const pendingMessage = addMessage("assistant", shouldGenerateTests ? "Generating test case(s)..." : "Thinking...");

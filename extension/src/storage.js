@@ -101,6 +101,14 @@ function learnFromPrompt(userPrompt) {
   const profile = getPreferenceProfile();
   const intentNotes = [];
 
+  const preconditionRegex = /(?:preconditions|передумови|передумова|precondition)\s*:\s*([\s\S]+?)(?=\n\n|\n\s*(?:test|тест|крок|step|напиши|згенеруй)\b|$)/iu;
+  const preconditionMatch = userPrompt.match(preconditionRegex);
+  if (preconditionMatch && preconditionMatch[1]) {
+    const extracted = preconditionMatch[1].trim();
+    localStorage.setItem("bgt-last-preconditions", extracted);
+    console.log("[DEBUG] Stored persistent preconditions:", extracted);
+  }
+
   if (text.includes("ua") && text.includes("en")) {
     profile.preferredLanguage = "ua-en";
   } else if (text.includes("тільки ua") || text.includes("only ua")) {
