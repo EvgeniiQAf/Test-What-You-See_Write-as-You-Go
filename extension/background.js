@@ -102,6 +102,42 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
     return true;
   }
+
+  if (message.type === "MAKE_BACKEND_REQUEST") {
+    const fetchOptions = {
+      method: message.method || "POST",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    };
+    if (message.payload) {
+      fetchOptions.body = JSON.stringify(message.payload);
+    }
+
+    fetch(message.endpoint, fetchOptions)
+      .then(async (response) => {
+        const text = await response.text();
+        let data = {};
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          data = { reply: text };
+        }
+        sendResponse({
+          ok: response.ok,
+          status: response.status,
+          data: data
+        });
+      })
+      .catch((error) => {
+        sendResponse({
+          ok: false,
+          error: error.message
+        });
+      });
+
+    return true;
+  }
 });
 
 chrome.commands.onCommand.addListener((command) => {

@@ -2,11 +2,23 @@
 
 async function loadTmsConfig() {
   try {
-    const response = await fetch("http://localhost:3000/api/config");
-    const result = await response.json();
-    window.activeTms = result?.activeTms || "testmo";
-    window.activeFolderId = window.activeTms === "testmo" ? result?.testmoFolderId : result?.testomatSuiteId;
-    console.log(`Loaded TMS Config: activeTms=${window.activeTms}, activeFolderId=${window.activeFolderId}`);
+    const response = await new Promise((resolve) => {
+      chrome.runtime.sendMessage(
+        {
+          type: "MAKE_BACKEND_REQUEST",
+          endpoint: "http://localhost:3000/api/config",
+          method: "GET",
+        },
+        (res) => resolve(res)
+      );
+    });
+
+    if (response && response.ok) {
+      const result = response.data;
+      window.activeTms = result?.activeTms || "testmo";
+      window.activeFolderId = window.activeTms === "testmo" ? result?.testmoFolderId : result?.testomatSuiteId;
+      console.log(`Loaded TMS Config: activeTms=${window.activeTms}, activeFolderId=${window.activeFolderId}`);
+    }
   } catch (error) {
     console.warn("Failed to load TMS config from server:", error);
   }
@@ -138,23 +150,28 @@ async function sendPrompt() {
       ? "http://localhost:3000/api/generate-testcases"
       : "http://localhost:3000/api/chat";
 
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload),
-      signal: controller.signal
+    const response = await new Promise((resolve) => {
+      chrome.runtime.sendMessage(
+        {
+          type: "MAKE_BACKEND_REQUEST",
+          endpoint,
+          method: "POST",
+          payload,
+        },
+        (res) => resolve(res)
+      );
     });
 
-    setStatus("waiting for response", "#b45309");
-
-    const result = await response.json();
+    if (!response) {
+      throw new Error("No response from background script");
+    }
 
     if (!response.ok) {
-      const serverError = result?.message || result?.error || `HTTP ${response.status}`;
+      const serverError = response.data?.message || response.data?.error || response.error || `HTTP ${response.status}`;
       throw new Error(serverError);
     }
+
+    const result = response.data;
 
     console.log("Server response:", result);
     setStatus(shouldGenerateTests ? "test case generated" : "assistant replied", "#15803d");

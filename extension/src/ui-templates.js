@@ -678,18 +678,26 @@ function addTestCaseCard(testCase, index) {
 
       await saveDraftJsonFile(fileName, draft);
 
-      const createResponse = await fetch("http://localhost:3000/api/create-testcase", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(draft),
+      const createResponse = await new Promise((resolve) => {
+        chrome.runtime.sendMessage(
+          {
+            type: "MAKE_BACKEND_REQUEST",
+            endpoint: "http://localhost:3000/api/create-testcase",
+            method: "POST",
+            payload: draft,
+          },
+          (res) => resolve(res)
+        );
       });
 
-      const createResult = await createResponse.json();
+      if (!createResponse) {
+        throw new Error("No response from background script");
+      }
+
+      const createResult = createResponse.data;
 
       if (!createResponse.ok || !createResult?.success) {
-        const serverError = createResult?.error || `HTTP ${createResponse.status}`;
+        const serverError = createResult?.error || createResponse.error || `HTTP ${createResponse.status}`;
         throw new Error(`TMS create failed: ${serverError}`);
       }
 
