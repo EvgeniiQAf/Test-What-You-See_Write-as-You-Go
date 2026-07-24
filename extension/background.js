@@ -15,6 +15,12 @@ const getNextDraftSequence = async () => {
 };
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message.type === "SELECTION_UPDATED") {
+    if (floatingWindowId === null) {
+      openFloatingWindow();
+    }
+  }
+
   if (message.type === "CAPTURE_SCREENSHOT") {
     chrome.tabs.captureVisibleTab(
       null,
