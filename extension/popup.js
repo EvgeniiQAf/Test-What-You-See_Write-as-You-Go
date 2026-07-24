@@ -58,36 +58,6 @@ loadSessionState().then(() => {
 
 // Listen for broadcast messages from content scripts
 chrome.runtime.onMessage.addListener((message) => {
-  if (message.type === "ELEMENT_SELECTED") {
-    loadSessionState().then(() => {
-      // Append element metadata
-      window.selectedElements = [...(window.selectedElements || []), message.element];
-
-      // Append screenshot metadata if present
-      if (message.screenshot) {
-        const screenshotLabel = `Фото ${window.selectedScreenshots.length + 1}: ${message.element.tag}${message.element.text || message.element.ariaLabel || message.element.placeholder ? ` - ${message.element.text || message.element.ariaLabel || message.element.placeholder}` : ""}`;
-        const selectedCount = window.selectedScreenshots.filter((item) => item.selected !== false).length;
-        window.selectedScreenshots = [
-          ...window.selectedScreenshots,
-          {
-            id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-            dataUrl: message.screenshot,
-            label: screenshotLabel,
-            selected: selectedCount < 3, // default first 3 selected
-          },
-        ];
-      }
-
-      saveSessionState();
-      renderSelectedElementsSummary();
-      renderSelectedScreenshotsSummary();
-      updateInputTasksPrefix();
-
-      // Broadcast update to all content scripts to redraw highlights
-      chrome.runtime.sendMessage({ type: "SELECTION_UPDATED" }).catch(() => {});
-    });
-  }
-
   if (message.type === "SELECTION_UPDATED") {
     loadSessionState().then(() => {
       renderSelectedElementsSummary();

@@ -52,7 +52,6 @@ document.addEventListener("click", async (event) => {
   }).catch(() => {});
 
   updateVisualSelectionBadges();
-  saveSessionState();
 
   console.log("Selected element saved locally:", window.selectedElementData);
 }, true);

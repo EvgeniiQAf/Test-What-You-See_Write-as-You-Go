@@ -15,10 +15,39 @@ const getNextDraftSequence = async () => {
 };
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === "SELECTION_UPDATED") {
-    if (sender && sender.tab) {
-      chrome.sidePanel.open({ tabId: sender.tab.id }).catch((e) => console.warn(e));
-    }
+  if (message.type === "ELEMENT_SELECTED") {
+    chrome.storage.local.get(["bgt-session-state", "bgt-selected-screenshots"], (result) => {
+      const state = result?.["bgt-session-state"] || {};
+      const selectedElements = [...(state.selectedElements || []), message.element];
+      
+      const updatedState = {
+        ...state,
+        selectedElements,
+      };
+
+      let screenshots = result?.["bgt-selected-screenshots"] || [];
+      if (message.screenshot) {
+        const screenshotLabel = `Фото ${screenshots.length + 1}: ${message.element.tag}${message.element.text || message.element.ariaLabel || message.element.placeholder ? ` - ${message.element.text || message.element.ariaLabel || message.element.placeholder}` : ""}`;
+        const selectedCount = screenshots.filter((item) => item.selected !== false).length;
+        screenshots.push({
+          id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          dataUrl: message.screenshot,
+          label: screenshotLabel,
+          selected: selectedCount < 3,
+        });
+      }
+
+      chrome.storage.local.set({
+        "bgt-session-state": updatedState,
+        "bgt-selected-screenshots": screenshots
+      }, () => {
+        if (sender && sender.tab) {
+          chrome.sidePanel.open({ tabId: sender.tab.id }).catch((e) => console.warn(e));
+        }
+        chrome.runtime.sendMessage({ type: "SELECTION_UPDATED" }).catch(() => {});
+      });
+    });
+    return true;
   }
 
   if (message.type === "CAPTURE_SCREENSHOT") {
