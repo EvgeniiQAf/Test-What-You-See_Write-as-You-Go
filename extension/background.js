@@ -22,8 +22,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === "CAPTURE_SCREENSHOT") {
+    const windowId = sender?.tab?.windowId || null;
     chrome.tabs.captureVisibleTab(
-      null,
+      windowId,
       { format: "jpeg", quality: 18 },
       (dataUrl) => {
         if (chrome.runtime.lastError) {
