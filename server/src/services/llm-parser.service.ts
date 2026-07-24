@@ -90,11 +90,7 @@ export class LlmParserService {
   }
 
   private stripLinks(text: string): string {
-    return String(text || "")
-      .replace(/https?:\/\/\S+/gi, "")
-      .replace(/www\.\S+/gi, "")
-      .replace(/\s{2,}/g, " ")
-      .trim();
+    return String(text || "").trim();
   }
 
   private normalizeLine(value: string): string {
