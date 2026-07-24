@@ -161,14 +161,13 @@ function learnFromPrompt(userPrompt) {
 function saveSessionState() {
   try {
     const isPopupContext = window.location.protocol === "chrome-extension:";
+    const input = document.getElementById("bgt-input");
+    const rules = document.getElementById("bgt-setting-rules");
+
     chrome.storage.local.get(["bgt-session-state"], (result) => {
       const existing = result?.["bgt-session-state"] || {};
-      const input = document.getElementById("bgt-input");
-      const rules = document.getElementById("bgt-setting-rules");
-      
       const state = {
         selectedElements: window.selectedElements || [],
-        selectedScreenshots: window.selectedScreenshots || [],
         conversationHistory: window.conversationHistory || [],
         nextInlineTestNumber: window.nextInlineTestNumber || 1,
         renderedTestCases: window.renderedTestCases || [],
@@ -177,7 +176,10 @@ function saveSessionState() {
       };
       
       chrome.storage.local.set({ "bgt-session-state": state }, () => {
-        console.log("[DEBUG] Session state saved to storage");
+        console.log("[DEBUG] Lightweight session state saved to storage");
+        if (isPopupContext) {
+          chrome.storage.local.set({ "bgt-selected-screenshots": window.selectedScreenshots || [] });
+        }
       });
     });
   } catch (error) {
@@ -188,15 +190,25 @@ function saveSessionState() {
 function loadSessionState() {
   return new Promise((resolve) => {
     try {
-      chrome.storage.local.get(["bgt-session-state"], (result) => {
+      const isPopupContext = window.location.protocol === "chrome-extension:";
+      const keys = isPopupContext 
+        ? ["bgt-session-state", "bgt-selected-screenshots"]
+        : ["bgt-session-state"];
+
+      chrome.storage.local.get(keys, (result) => {
         const state = result?.["bgt-session-state"];
         if (state) {
           window.selectedElements = state.selectedElements || [];
-          window.selectedScreenshots = state.selectedScreenshots || [];
           window.conversationHistory = state.conversationHistory || [];
           window.nextInlineTestNumber = state.nextInlineTestNumber || 1;
           window.renderedTestCases = state.renderedTestCases || [];
           
+          if (isPopupContext) {
+            window.selectedScreenshots = result?.["bgt-selected-screenshots"] || [];
+          } else {
+            window.selectedScreenshots = [];
+          }
+
           const input = document.getElementById("bgt-input");
           if (input && state.inputValue) {
             input.value = state.inputValue;
@@ -225,10 +237,9 @@ function clearSessionState() {
     window.renderedTestCases = [];
     window.conversationHistory = [];
     window.nextInlineTestNumber = 1;
-    chrome.storage.local.remove(["bgt-session-state"], () => {
+    chrome.storage.local.remove(["bgt-session-state", "bgt-selected-screenshots"], () => {
       console.log("[DEBUG] Session state cleared");
       
-      // Reset DOM fields in popup if they exist
       const input = document.getElementById("bgt-input");
       if (input) input.value = "";
       

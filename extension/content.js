@@ -32,7 +32,7 @@ document.addEventListener("click", async (event) => {
     pageTitle: document.title,
   });
 
-  // Load existing session state to align all tab indices
+  // Load existing session state to align all tab indices (lightweight, no screenshots)
   await loadSessionState();
   restoreDomNodesFromState(false);
 
@@ -43,30 +43,18 @@ document.addEventListener("click", async (event) => {
   await new Promise((r) => setTimeout(r, 100));
 
   let selectedScreenshot = await captureScreenshot();
-  if (selectedScreenshot) {
-    const screenshotLabel = `Фото ${window.selectedScreenshots.length + 1}: ${window.selectedElementData.tag}${window.selectedElementData.text || window.selectedElementData.ariaLabel || window.selectedElementData.placeholder ? ` - ${window.selectedElementData.text || window.selectedElementData.ariaLabel || window.selectedElementData.placeholder}` : ""}`;
-    const selectedCount = window.selectedScreenshots.filter((item) => item.selected !== false).length;
-    window.selectedScreenshots = [
-      ...window.selectedScreenshots,
-      {
-        id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-        dataUrl: selectedScreenshot,
-        label: screenshotLabel,
-        selected: selectedCount < 3, // default first 3 selected
-      },
-    ];
-  }
+
+  // Send element and screenshot directly to Side Panel
+  chrome.runtime.sendMessage({
+    type: "ELEMENT_SELECTED",
+    element: window.selectedElementData,
+    screenshot: selectedScreenshot
+  }).catch(() => {});
 
   updateVisualSelectionBadges();
   saveSessionState();
 
   console.log("Selected element saved locally:", window.selectedElementData);
-
-  chrome.runtime.sendMessage({
-    type: "SELECTION_UPDATED",
-    selectedElements: window.selectedElements,
-    selectedScreenshots: window.selectedScreenshots,
-  }).catch(() => {});
 }, true);
 
 chrome.runtime.onMessage.addListener(async (message, _sender, sendResponse) => {

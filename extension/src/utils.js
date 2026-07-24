@@ -125,7 +125,7 @@ function compressHtml(htmlString) {
     }
 
     Array.from(root.childNodes).forEach(child => prune(child));
-    return cleaned;
+    return root.innerHTML;
   } catch (err) {
     console.warn("HTML compression error:", err);
     return htmlString.slice(0, 8000) + "... (fallback truncation)";
