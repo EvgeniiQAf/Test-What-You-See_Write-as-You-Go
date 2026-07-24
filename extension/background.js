@@ -102,6 +102,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         focused: true,
       },
       (createdWindow) => {
+        floatingWindowId = createdWindow?.id || null;
         sendResponse({ ok: true, windowId: createdWindow?.id });
       }
     );
