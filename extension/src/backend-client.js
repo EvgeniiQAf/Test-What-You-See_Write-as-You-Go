@@ -206,7 +206,23 @@ async function sendPrompt() {
       window.selectedElements = [];
       renderSelectedScreenshotsSummary();
       renderSelectedElementsSummary();
-      clearSessionState();
+      
+      // Save lightweight state to clear selections from storage, but keep chat history
+      saveSessionState();
+      
+      // Clear outlines on all tabs
+      try {
+        chrome.tabs.query({}, (tabs) => {
+          (tabs || []).forEach((tab) => {
+            if (tab.id) {
+              chrome.tabs.sendMessage(tab.id, { type: "CLEAR_HIGHLIGHTS" }).catch(() => {});
+            }
+          });
+        });
+      } catch (e) {
+        console.warn(e);
+      }
+      
       console.log("Screenshots and elements cleared after successful response.");
 
     } else {
