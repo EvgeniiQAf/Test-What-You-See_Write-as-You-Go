@@ -1,4 +1,4 @@
-console.log("Browser GPT Testmo Helper loaded (Side Panel Command Center Mode)");
+console.log("TWYS QA Helper loaded (Side Panel Command Center Mode)");
 
 // Page interactions listeners
 document.addEventListener("mouseover", (event) => {

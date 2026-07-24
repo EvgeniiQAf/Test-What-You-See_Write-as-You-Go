@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Browser GPT Testmo Helper",
-  "version": "1.0.0",
-  "description": "Select page elements and generate Testmo test cases",
+  "name": "TWYS QA Helper",
+  "version": "2.0.0",
+  "description": "Select page elements, record actions and generate Testmo test cases",
   "permissions": ["activeTab", "scripting", "tabs", "downloads", "storage", "sidePanel"],
 "host_permissions": [
   "<all_urls>"
