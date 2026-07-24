@@ -223,9 +223,27 @@ function clearSessionState() {
     window.selectedElements = [];
     window.selectedScreenshots = [];
     window.renderedTestCases = [];
+    window.conversationHistory = [];
     window.nextInlineTestNumber = 1;
     chrome.storage.local.remove(["bgt-session-state"], () => {
       console.log("[DEBUG] Session state cleared");
+      
+      // Reset DOM fields in popup if they exist
+      const input = document.getElementById("bgt-input");
+      if (input) input.value = "";
+      
+      const chatBlock = document.getElementById("bgt-chat");
+      if (chatBlock) chatBlock.innerHTML = "";
+
+      const statusBlock = document.getElementById("bgt-status");
+      if (statusBlock) {
+        statusBlock.textContent = "Status: session reset";
+        statusBlock.style.color = "#4b5563";
+      }
+
+      if (typeof renderSelectedElementsSummary === "function") renderSelectedElementsSummary();
+      if (typeof renderSelectedScreenshotsSummary === "function") renderSelectedScreenshotsSummary();
+      if (typeof updateAddTestButtonLabel === "function") updateAddTestButtonLabel();
       
       // Notify active tab to clear outlines and badges
       try {
