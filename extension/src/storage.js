@@ -244,7 +244,6 @@ function clearSessionState() {
       if (typeof renderSelectedElementsSummary === "function") renderSelectedElementsSummary();
       if (typeof renderSelectedScreenshotsSummary === "function") renderSelectedScreenshotsSummary();
       if (typeof updateAddTestButtonLabel === "function") updateAddTestButtonLabel();
-      
       // Notify all tabs to clear outlines and badges
       try {
         chrome.tabs.query({}, (tabs) => {
@@ -254,6 +253,8 @@ function clearSessionState() {
             }
           });
         });
+      } catch (e) {
+        console.warn("Could not notify tabs to clear highlights", e);
       }
       
       // Broadcast update
