@@ -32,27 +32,32 @@ document.addEventListener("click", async (event) => {
     pageTitle: document.title,
   });
 
-  // Load existing session state to append the new element
+  // Load existing session state to align all tab indices
   await loadSessionState();
+  restoreDomNodesFromState(false);
 
-  window.selectedDomNodes = [...(window.selectedDomNodes || []), element];
-  window.selectedElements = [...(window.selectedElements || []), window.selectedElementData];
+  window.selectedDomNodes.push(element);
+  window.selectedElements.push(window.selectedElementData);
 
   let selectedScreenshot = await captureScreenshot();
   selectedScreenshot = await compressScreenshotDataUrl(selectedScreenshot);
-  if (selectedScreenshot) {
-    const screenshotLabel = `Фото ${window.selectedScreenshots.length + 1}: ${window.selectedElementData.tag}${window.selectedElementData.text || window.selectedElementData.ariaLabel || window.selectedElementData.placeholder ? ` - ${window.selectedElementData.text || window.selectedElementData.ariaLabel || window.selectedElementData.placeholder}` : ""}`;
-    const selectedCount = window.selectedScreenshots.filter((item) => item.selected !== false).length;
-    window.selectedScreenshots = [
-      ...window.selectedScreenshots,
-      {
-        id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-        dataUrl: selectedScreenshot,
-        label: screenshotLabel,
-        selected: selectedCount < 3, // default first 3 selected
-      },
-    ];
+  
+  // Use a 1x1 transparent GIF placeholder if screenshot capture returns null
+  if (!selectedScreenshot) {
+    selectedScreenshot = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
   }
+
+  const screenshotLabel = `Фото ${window.selectedScreenshots.length + 1}: ${window.selectedElementData.tag}${window.selectedElementData.text || window.selectedElementData.ariaLabel || window.selectedElementData.placeholder ? ` - ${window.selectedElementData.text || window.selectedElementData.ariaLabel || window.selectedElementData.placeholder}` : ""}`;
+  const selectedCount = window.selectedScreenshots.filter((item) => item.selected !== false).length;
+  window.selectedScreenshots = [
+    ...window.selectedScreenshots,
+    {
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      dataUrl: selectedScreenshot,
+      label: screenshotLabel,
+      selected: selectedCount < 3, // default first 3 selected
+    },
+  ];
 
   updateVisualSelectionBadges();
   saveSessionState();

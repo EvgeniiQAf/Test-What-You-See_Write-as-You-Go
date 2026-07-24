@@ -245,15 +245,15 @@ function clearSessionState() {
       if (typeof renderSelectedScreenshotsSummary === "function") renderSelectedScreenshotsSummary();
       if (typeof updateAddTestButtonLabel === "function") updateAddTestButtonLabel();
       
-      // Notify active tab to clear outlines and badges
+      // Notify all tabs to clear outlines and badges
       try {
-        chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
-          if (tabs?.[0]?.id) {
-            chrome.tabs.sendMessage(tabs[0].id, { type: "CLEAR_HIGHLIGHTS" }).catch(() => {});
-          }
+        chrome.tabs.query({}, (tabs) => {
+          (tabs || []).forEach((tab) => {
+            if (tab.id) {
+              chrome.tabs.sendMessage(tab.id, { type: "CLEAR_HIGHLIGHTS" }).catch(() => {});
+            }
+          });
         });
-      } catch (e) {
-        console.warn("Could not notify active tab to clear highlights", e);
       }
       
       // Broadcast update
