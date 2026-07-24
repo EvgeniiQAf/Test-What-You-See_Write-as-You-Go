@@ -1,4 +1,4 @@
-console.log("Detached floating popup window loaded");
+console.log("Chrome Side Panel loaded");
 
 const root = document.getElementById("bgt-app-root");
 if (root) {
@@ -6,19 +6,23 @@ if (root) {
   initializeUiPanelListeners();
 }
 
-// Adjust UI for standalone window mode
-const header = document.querySelector(".bgt-header");
+// Adjust UI for Side Panel mode
+const header = document.querySelector(".bgt-header") || document.getElementById("bgt-header");
 if (header) {
   const titleSpan = header.querySelector("span");
   if (titleSpan) {
-    titleSpan.textContent = "Browser GPT Testmo Helper (Floating Window)";
+    titleSpan.textContent = "TWYS QA Helper (Side Panel)";
   }
 }
 
-// Hide detach window button in floating window mode
+// Hide window actions in side panel mode
 const detachBtn = document.getElementById("bgt-detach-window");
 if (detachBtn) {
   detachBtn.style.display = "none";
+}
+const closeBtn = document.getElementById("bgt-close");
+if (closeBtn) {
+  closeBtn.style.display = "none";
 }
 
 function updateInputTasksPrefix() {

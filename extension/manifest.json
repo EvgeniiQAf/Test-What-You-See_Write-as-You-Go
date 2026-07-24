@@ -3,12 +3,15 @@
   "name": "Browser GPT Testmo Helper",
   "version": "1.0.0",
   "description": "Select page elements and generate Testmo test cases",
-  "permissions": ["activeTab", "scripting", "tabs", "downloads", "storage"],
+  "permissions": ["activeTab", "scripting", "tabs", "downloads", "storage", "sidePanel"],
 "host_permissions": [
   "<all_urls>"
 ],
   "action": {
     "default_title": "Open TWYS QA Helper"
+  },
+  "side_panel": {
+    "default_path": "popup.html"
   },
   "background": {
     "service_worker": "background.js"

@@ -14,10 +14,10 @@ const getNextDraftSequence = async () => {
   return next;
 };
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "SELECTION_UPDATED") {
-    if (floatingWindowId === null) {
-      openFloatingWindow();
+    if (sender && sender.tab) {
+      chrome.sidePanel.open({ tabId: sender.tab.id }).catch((e) => console.warn(e));
     }
   }
 
@@ -147,68 +147,22 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 });
 
-let floatingWindowId = null;
-
-function openFloatingWindow(screenX = 100, screenY = 100) {
-  const left = Math.max(10, Math.round(screenX));
-  const top = Math.max(10, Math.round(screenY));
-
-  chrome.windows.create(
-    {
-      url: chrome.runtime.getURL("popup.html"),
-      type: "popup",
-      left: left,
-      top: top,
-      width: 550,
-      height: 760,
-      focused: true,
-    },
-    (createdWindow) => {
-      floatingWindowId = createdWindow?.id || null;
-    }
-  );
-}
-
-function toggleFloatingWindow() {
-  if (floatingWindowId !== null) {
-    chrome.windows.get(floatingWindowId, (win) => {
-      if (chrome.runtime.lastError || !win) {
-        openFloatingWindow();
-      } else {
-        chrome.windows.remove(floatingWindowId);
-        floatingWindowId = null;
-      }
-    });
-  } else {
-    openFloatingWindow();
-  }
-}
-
-// Open or focus floating window when extension toolbar icon is clicked
-chrome.action.onClicked.addListener(() => {
-  if (floatingWindowId !== null) {
-    chrome.windows.get(floatingWindowId, (win) => {
-      if (chrome.runtime.lastError || !win) {
-        openFloatingWindow();
-      } else {
-        chrome.windows.update(floatingWindowId, { focused: true });
-      }
-    });
-  } else {
-    openFloatingWindow();
-  }
+// Configure Side Panel behavior to open on toolbar icon click
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch((e) => console.warn(e));
 });
 
-// Clean track window id on remove
-chrome.windows.onRemoved.addListener((windowId) => {
-  if (windowId === floatingWindowId) {
-    floatingWindowId = null;
-  }
-});
+// Set behavior globally on service worker startup
+chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch((e) => console.warn(e));
 
 chrome.commands.onCommand.addListener((command) => {
   if (command === "toggle-panel") {
-    toggleFloatingWindow();
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const activeTab = tabs[0];
+      if (activeTab?.id) {
+        chrome.sidePanel.open({ tabId: activeTab.id }).catch((e) => console.warn(e));
+      }
+    });
   } else {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const activeTab = tabs[0];

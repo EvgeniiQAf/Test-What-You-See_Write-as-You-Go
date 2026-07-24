@@ -4,20 +4,30 @@ let isDragging = false;
 let dragOffsetX = 0;
 let dragOffsetY = 0;
 
-function hidePanel() {
+function hidePanel(sync = true) {
   const panelLayer = document.querySelector("div[style*='z-index: 2147483647']");
   const reopenButton = document.getElementById("bgt-reopen");
   if (panelLayer) panelLayer.style.display = "none";
   if (reopenButton) reopenButton.style.display = "block";
+  if (sync) {
+    chrome.storage.local.set({ "bgt-panel-visible": false }, () => {
+      chrome.runtime.sendMessage({ type: "VISIBILITY_UPDATED", visible: false }).catch(() => {});
+    });
+  }
 }
 
-function showPanel() {
+function showPanel(sync = true) {
   const panelLayer = document.querySelector("div[style*='z-index: 2147483647']");
   const reopenButton = document.getElementById("bgt-reopen");
   const input = document.getElementById("bgt-input");
   if (panelLayer) panelLayer.style.display = "block";
   if (reopenButton) reopenButton.style.display = "none";
   if (input) input.focus();
+  if (sync) {
+    chrome.storage.local.set({ "bgt-panel-visible": true }, () => {
+      chrome.runtime.sendMessage({ type: "VISIBILITY_UPDATED", visible: true }).catch(() => {});
+    });
+  }
 }
 
 function initializeUiPanelListeners() {
@@ -174,7 +184,17 @@ function setupDragAndDrop(panelHeader, panel) {
   });
 
   document.addEventListener("mouseup", () => {
-    isDragging = false;
+    if (isDragging) {
+      isDragging = false;
+      const isPopupContext = window.location.protocol === "chrome-extension:";
+      if (!isPopupContext) {
+        const top = panel.style.top;
+        const left = panel.style.left;
+        chrome.storage.local.set({ "bgt-panel-position": { top, left } }, () => {
+          chrome.runtime.sendMessage({ type: "POSITION_UPDATED", top, left }).catch(() => {});
+        });
+      }
+    }
   });
 }
 
