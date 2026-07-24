@@ -160,19 +160,25 @@ function learnFromPrompt(userPrompt) {
 
 function saveSessionState() {
   try {
-    const input = document.getElementById("bgt-input");
-    const rules = document.getElementById("bgt-setting-rules");
-    const state = {
-      selectedElements: window.selectedElements || [],
-      selectedScreenshots: window.selectedScreenshots || [],
-      conversationHistory: window.conversationHistory || [],
-      nextInlineTestNumber: window.nextInlineTestNumber || 1,
-      renderedTestCases: window.renderedTestCases || [],
-      inputValue: input ? input.value : "",
-      rulesValue: rules ? rules.value : ""
-    };
-    chrome.storage.local.set({ "bgt-session-state": state }, () => {
-      console.log("[DEBUG] Session state saved to storage");
+    const isPopupContext = window.location.protocol === "chrome-extension:";
+    chrome.storage.local.get(["bgt-session-state"], (result) => {
+      const existing = result?.["bgt-session-state"] || {};
+      const input = document.getElementById("bgt-input");
+      const rules = document.getElementById("bgt-setting-rules");
+      
+      const state = {
+        selectedElements: window.selectedElements || [],
+        selectedScreenshots: window.selectedScreenshots || [],
+        conversationHistory: window.conversationHistory || [],
+        nextInlineTestNumber: window.nextInlineTestNumber || 1,
+        renderedTestCases: window.renderedTestCases || [],
+        inputValue: isPopupContext && input ? input.value : (existing.inputValue || ""),
+        rulesValue: isPopupContext && rules ? rules.value : (existing.rulesValue || "")
+      };
+      
+      chrome.storage.local.set({ "bgt-session-state": state }, () => {
+        console.log("[DEBUG] Session state saved to storage");
+      });
     });
   } catch (error) {
     console.warn("Failed to save session state:", error);
@@ -220,6 +226,20 @@ function clearSessionState() {
     window.nextInlineTestNumber = 1;
     chrome.storage.local.remove(["bgt-session-state"], () => {
       console.log("[DEBUG] Session state cleared");
+      
+      // Notify active tab to clear outlines and badges
+      try {
+        chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
+          if (tabs?.[0]?.id) {
+            chrome.tabs.sendMessage(tabs[0].id, { type: "CLEAR_HIGHLIGHTS" }).catch(() => {});
+          }
+        });
+      } catch (e) {
+        console.warn("Could not notify active tab to clear highlights", e);
+      }
+      
+      // Broadcast update
+      chrome.runtime.sendMessage({ type: "SELECTION_UPDATED" }).catch(() => {});
     });
   } catch (error) {
     console.warn("Failed to clear session state:", error);

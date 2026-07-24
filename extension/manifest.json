@@ -6,7 +6,11 @@
   "permissions": ["activeTab", "scripting", "tabs", "downloads", "storage"],
 "host_permissions": [
   "<all_urls>"
-],  "background": {
+],
+  "action": {
+    "default_title": "Open TWYS QA Helper"
+  },
+  "background": {
     "service_worker": "background.js"
   },
   "content_scripts": [

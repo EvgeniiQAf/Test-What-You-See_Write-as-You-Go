@@ -15,44 +15,24 @@ if (header) {
   }
 }
 
-// Poll or listen for selections from active tab
-async function syncFromActiveTab() {
-  try {
-    const tabs = await chrome.tabs.query({ active: true, currentWindow: false });
-    const activeTab = tabs[0];
-    if (!activeTab?.id) return;
-
-    chrome.tabs.sendMessage(activeTab.id, { type: "GET_CURRENT_SELECTIONS" }, (response) => {
-      if (chrome.runtime.lastError || !response) return;
-
-      if (response.selectedElements && Array.isArray(response.selectedElements)) {
-        window.selectedElements = response.selectedElements;
-        renderSelectedElementsSummary();
-      }
-      if (response.selectedScreenshots && Array.isArray(response.selectedScreenshots)) {
-        window.selectedScreenshots = response.selectedScreenshots;
-        renderSelectedScreenshotsSummary();
-      }
-    });
-  } catch (err) {
-    // Ignore tab query errors
-  }
-}
+// Load session state on startup
+loadSessionState().then(() => {
+  renderSelectedElementsSummary();
+  renderSelectedScreenshotsSummary();
+  
+  // Save state on input changes
+  const input = document.getElementById("bgt-input");
+  const rules = document.getElementById("bgt-setting-rules");
+  input?.addEventListener("input", saveSessionState);
+  rules?.addEventListener("input", saveSessionState);
+});
 
 // Listen for broadcast messages from content scripts
 chrome.runtime.onMessage.addListener((message) => {
   if (message.type === "SELECTION_UPDATED") {
-    if (message.selectedElements) {
-      window.selectedElements = message.selectedElements;
+    loadSessionState().then(() => {
       renderSelectedElementsSummary();
-    }
-    if (message.selectedScreenshots) {
-      window.selectedScreenshots = message.selectedScreenshots;
       renderSelectedScreenshotsSummary();
-    }
+    });
   }
 });
-
-// Periodic sync every 1 second
-setInterval(syncFromActiveTab, 1000);
-syncFromActiveTab();

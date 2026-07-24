@@ -42,10 +42,23 @@ function initializeUiPanelListeners() {
   setupPresetListeners();
   applySavedSettingsToUi();
 
+  const clearSessionButton = document.getElementById("bgt-clear-session");
+  clearSessionButton?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    if (confirm("Очистити всі поточні виділення та почати новий тест-кейс?")) {
+      clearSessionState();
+    }
+  });
+
   closeButton?.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
-    hidePanel();
+    const isPopupContext = window.location.protocol === "chrome-extension:";
+    if (isPopupContext) {
+      window.close();
+    } else {
+      hidePanel();
+    }
   });
 
   reopenButton?.addEventListener("click", () => {
