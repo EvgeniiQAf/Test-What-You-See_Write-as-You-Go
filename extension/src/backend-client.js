@@ -203,8 +203,11 @@ async function sendPrompt() {
       updateAddTestButtonLabel();
 
       window.selectedScreenshots = [];
+      window.selectedElements = [];
       renderSelectedScreenshotsSummary();
-      console.log("Screenshots cleared after successful response.");
+      renderSelectedElementsSummary();
+      clearSessionState();
+      console.log("Screenshots and elements cleared after successful response.");
 
     } else {
       const reply = result?.reply || "No response text.";

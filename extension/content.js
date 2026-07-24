@@ -140,7 +140,7 @@ document.addEventListener("click", async (event) => {
         id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
         dataUrl: selectedScreenshot,
         label: screenshotLabel,
-        selected: selectedCount < MAX_SELECTED_SCREENSHOTS,
+        selected: selectedCount < 3,
       },
     ];
   }
@@ -152,11 +152,19 @@ document.addEventListener("click", async (event) => {
     .map((item) => `- ${item.tag}: ${item.text || item.ariaLabel || item.placeholder || "Element selected"}`)
     .join("\n");
 
-  input.value = `Tasks:\n${selectionLines}\n\n`;
+  const currentVal = input.value;
+  if (!currentVal.startsWith("Tasks:")) {
+    input.value = `Tasks:\n${selectionLines}\n\n` + currentVal;
+  } else {
+    const parts = currentVal.split("\n\n");
+    parts[0] = `Tasks:\n${selectionLines}`;
+    input.value = parts.join("\n\n");
+  }
   input.selectionStart = input.value.length;
   input.selectionEnd = input.value.length;
   input.focus();
 
+  saveSessionState();
   console.log("Selected element saved locally:", window.selectedElementData);
   console.log("Selection count saved locally:", window.selectedElements.length);
   console.log("Screenshot saved locally:", Boolean(selectedScreenshot));
@@ -199,9 +207,18 @@ chrome.runtime.onMessage.addListener(async (message, _sender, sendResponse) => {
           },
         ];
         renderSelectedScreenshotsSummary();
+        saveSessionState();
         addMessage("assistant", "Captured quick tab screenshot via Alt+Shift+S.");
         setStatus("quick screenshot captured", "#15803d");
       }
     }
+  }
+});
+
+// Load session state on startup
+loadSessionState().then((loaded) => {
+  if (loaded) {
+    renderSelectedElementsSummary();
+    renderSelectedScreenshotsSummary();
   }
 });

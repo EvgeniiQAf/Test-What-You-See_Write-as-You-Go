@@ -44,6 +44,7 @@ function renderSelectedScreenshotsSummary() {
           item.id === screenshotId ? { ...item, selected: false } : item
         ));
         renderSelectedScreenshotsSummary();
+        saveSessionState();
         return;
       }
 
@@ -60,6 +61,7 @@ function renderSelectedScreenshotsSummary() {
       ));
 
       renderSelectedScreenshotsSummary();
+      saveSessionState();
     });
   });
 }

@@ -15,7 +15,7 @@ const HISTORY_STORAGE_KEY = "bgt-conversation-history";
 const PROFILE_STORAGE_KEY = "bgt-preference-profile";
 const MAX_HISTORY_ITEMS = 20;
 const MAX_TESTS = 10;
-const MAX_SELECTED_SCREENSHOTS = 3;
+const MAX_SELECTED_SCREENSHOTS = 10;
 
 const defaultPreferenceProfile = {
   preferredLanguage: "ua-en",

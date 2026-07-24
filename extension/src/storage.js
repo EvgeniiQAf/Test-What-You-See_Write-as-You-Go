@@ -157,3 +157,71 @@ function learnFromPrompt(userPrompt) {
   savePreferenceProfile(profile);
   return profile;
 }
+
+function saveSessionState() {
+  try {
+    const input = document.getElementById("bgt-input");
+    const rules = document.getElementById("bgt-setting-rules");
+    const state = {
+      selectedElements: window.selectedElements || [],
+      selectedScreenshots: window.selectedScreenshots || [],
+      conversationHistory: window.conversationHistory || [],
+      nextInlineTestNumber: window.nextInlineTestNumber || 1,
+      renderedTestCases: window.renderedTestCases || [],
+      inputValue: input ? input.value : "",
+      rulesValue: rules ? rules.value : ""
+    };
+    chrome.storage.local.set({ "bgt-session-state": state }, () => {
+      console.log("[DEBUG] Session state saved to storage");
+    });
+  } catch (error) {
+    console.warn("Failed to save session state:", error);
+  }
+}
+
+function loadSessionState() {
+  return new Promise((resolve) => {
+    try {
+      chrome.storage.local.get(["bgt-session-state"], (result) => {
+        const state = result?.["bgt-session-state"];
+        if (state) {
+          window.selectedElements = state.selectedElements || [];
+          window.selectedScreenshots = state.selectedScreenshots || [];
+          window.conversationHistory = state.conversationHistory || [];
+          window.nextInlineTestNumber = state.nextInlineTestNumber || 1;
+          window.renderedTestCases = state.renderedTestCases || [];
+          
+          const input = document.getElementById("bgt-input");
+          if (input && state.inputValue) {
+            input.value = state.inputValue;
+          }
+          const rules = document.getElementById("bgt-setting-rules");
+          if (rules && state.rulesValue) {
+            rules.value = state.rulesValue;
+          }
+          console.log("[DEBUG] Session state loaded from storage");
+          resolve(true);
+        } else {
+          resolve(false);
+        }
+      });
+    } catch (error) {
+      console.warn("Failed to load session state:", error);
+      resolve(false);
+    }
+  });
+}
+
+function clearSessionState() {
+  try {
+    window.selectedElements = [];
+    window.selectedScreenshots = [];
+    window.renderedTestCases = [];
+    window.nextInlineTestNumber = 1;
+    chrome.storage.local.remove(["bgt-session-state"], () => {
+      console.log("[DEBUG] Session state cleared");
+    });
+  } catch (error) {
+    console.warn("Failed to clear session state:", error);
+  }
+}
