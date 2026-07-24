@@ -123,3 +123,87 @@ loadSessionState().then((loaded) => {
     restoreDomNodesFromState();
   }
 });
+
+function pushRecordedAction(action) {
+  chrome.storage.local.get(["bgt-session-state"], (result) => {
+    const state = result?.["bgt-session-state"] || {};
+    const recordedActions = state.recordedActions || [];
+    recordedActions.push(action);
+    
+    if (recordedActions.length > 50) {
+      recordedActions.shift();
+    }
+    
+    state.recordedActions = recordedActions;
+    chrome.storage.local.set({ "bgt-session-state": state }, () => {
+      console.log("[DEBUG] Recorded action:", action);
+      chrome.runtime.sendMessage({ type: "SELECTION_UPDATED" }).catch(() => {});
+    });
+  });
+}
+
+document.addEventListener("click", (event) => {
+  if (event.shiftKey) return;
+
+  const element = event.target;
+  const tag = element.tagName.toLowerCase();
+  
+  if (element.closest(".bgt-element-badge")) {
+    return;
+  }
+
+  const isInteractive = ["button", "a", "input", "select", "textarea"].includes(tag) || 
+                       element.getAttribute("role") === "button" ||
+                       window.getComputedStyle(element).cursor === "pointer" ||
+                       element.closest("button") ||
+                       element.closest("a");
+
+  if (!isInteractive) return;
+
+  const type = element.getAttribute("type") || "";
+  if ((tag === "input" && ["text", "email", "password", "search", "tel", "number"].includes(type)) || tag === "textarea") {
+    return;
+  }
+
+  const label = (element.innerText || element.textContent || "").trim().slice(0, 100) || 
+                element.getAttribute("aria-label")?.trim() || 
+                element.getAttribute("placeholder")?.trim() || 
+                "";
+
+  const action = {
+    type: "click",
+    tag,
+    label,
+    id: element.id || "",
+    url: window.location.href,
+    timestamp: Date.now()
+  };
+
+  pushRecordedAction(action);
+}, true);
+
+document.addEventListener("change", (event) => {
+  const element = event.target;
+  const tag = element.tagName.toLowerCase();
+  if (tag !== "input" && tag !== "textarea" && tag !== "select") return;
+
+  const isPassword = element.getAttribute("type") === "password";
+  const value = isPassword ? "••••••••" : element.value;
+
+  const label = element.getAttribute("aria-label")?.trim() || 
+                element.getAttribute("placeholder")?.trim() || 
+                element.id || 
+                element.name || 
+                "";
+
+  const action = {
+    type: "input",
+    tag,
+    label,
+    value: String(value).slice(0, 200),
+    url: window.location.href,
+    timestamp: Date.now()
+  };
+
+  pushRecordedAction(action);
+}, true);

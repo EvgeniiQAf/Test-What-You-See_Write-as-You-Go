@@ -30,6 +30,18 @@ export const buildTestCasePrompt = (input: GenerateTestCasesInput): string => {
   const preferenceNotes = buildPreferenceNotesContext(input);
   const uiLabelContext = buildUiLabelContext(input);
   const selectedElementsContext = buildSelectedElementsContext(input);
+  
+  const recordedActionsContext = (input.recordedActions || [])
+    .map((action, idx) => {
+      const timeStr = action.timestamp ? `[+${Math.round((action.timestamp - (input.recordedActions?.[0]?.timestamp || 0)) / 1000)}s]` : "";
+      if (action.type === "click") {
+        return `${idx + 1}. Click ${action.tag} "${action.label || ""}" (id: ${action.id || "N/A"}) at ${action.url || "N/A"} ${timeStr}`;
+      } else if (action.type === "input") {
+        return `${idx + 1}. Type in ${action.tag} "${action.label || ""}" value: "${action.value || ""}" at ${action.url || "N/A"} ${timeStr}`;
+      }
+      return `${idx + 1}. Action: ${action.type} on ${action.tag} "${action.label || ""}" at ${action.url || "N/A"} ${timeStr}`;
+    })
+    .join("\n");
 
   return `
 Generate QA test cases for the selected UI element in two languages: Ukrainian and English.
@@ -49,12 +61,12 @@ Output JSON Schema:
       "steps": [
         {
           "step": {
-            "ua": "Крок 1 ...",
-            "en": "Step 1 ..."
+            "ua": "Крок українською",
+            "en": "Step in English"
           },
           "expectedResults": {
-            "ua": ["1.1 ...", "1.2 ..."],
-            "en": ["1.1 ...", "1.2 ..."]
+            "ua": ["Очікуваний результат 1", "Очікуваний результат 2"],
+            "en": ["Expected result 1", "Expected result 2"]
           }
         }
       ],
@@ -95,6 +107,7 @@ PROFESSIONAL QA DOCUMENTATION STANDARDS & RULES:
      * Generate separate steps for each phase of interaction (e.g., Step 1: Select option A; Step 2: Select option B; Step 3: Deselect option A; Step 4: Click the "x" clear mark) to verify the UI updates correctly at each stage.
    - MULTI-ACTION / FILTER STATUSES RULE: If testing multiple dropdown statuses (e.g. "Pending", "In Progress", "Not Pending"), write a separate step for selecting and verifying each status sequentially.
    - E2E / COMPREHENSIVE SCENARIOS: If the user prompt describes or implies an E2E sequence or a longer user flow, generate a complete test case with all necessary steps (5 to 10+ steps as required) to cover the full workflow from start to finish.
+   - RECORDED USER ACTIONS: If a list of chronological "Recorded user actions" is provided below, treat it as the absolute source of truth for the exact steps, values typed, clicks, and page transitions of the E2E scenario. Translate these actions accurately into the generated test steps and expected results, taking into account page URL changes!
    - CONTEXT-BASED STEP GRANULARITY: Analyze the user's prompt, checklist, or described checklist columns dynamically. Decide the most logical number of steps to cover all specified items. If the user lists specific fields, columns, or checks to verify, do not overly compress them into a few generic steps. Instead, write granular steps that follow the structure of the user's request so that the test case remains clear, readable, and covers the described scenarios thoroughly.
    - INVALID / BOUNDARY DATA ENTRY INTENT RULE: When writing steps for entering invalid search queries, non-matching data, boundary values, special characters, or incorrect field formats:
      * ALWAYS explicitly state the test intent/category in the step description first, followed by the specific example input in parentheses.
@@ -136,6 +149,9 @@ ${uiLabelContext}
 
 Shift+Click selections in order:
 ${selectedElementsContext}
+
+Recorded user actions (recorded automatically as the user clicked and typed):
+${recordedActionsContext || "N/A"}
 
 User prompt:
 ${input.userPrompt || "N/A"}

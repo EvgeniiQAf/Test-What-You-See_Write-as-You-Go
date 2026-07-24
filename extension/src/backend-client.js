@@ -109,6 +109,7 @@ async function sendPrompt() {
       placeholder,
       elementTag,
       selectedElements: normalizedSelectedElements,
+      recordedActions: window.recordedActions || [],
       images: normalizedSelectedScreenshots.slice(0, MAX_SELECTED_SCREENSHOTS),
       userPrompt,
       conversationHistory: window.conversationHistory,
@@ -128,6 +129,7 @@ async function sendPrompt() {
       placeholder,
       elementTag,
       selectedElements: normalizedSelectedElements,
+      recordedActions: window.recordedActions || [],
       images: normalizedSelectedScreenshots.slice(0, MAX_SELECTED_SCREENSHOTS),
       conversationHistory: window.conversationHistory,
       preferenceProfile,
@@ -204,6 +206,7 @@ async function sendPrompt() {
 
       window.selectedScreenshots = [];
       window.selectedElements = [];
+      window.recordedActions = [];
       renderSelectedScreenshotsSummary();
       renderSelectedElementsSummary();
       

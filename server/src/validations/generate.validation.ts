@@ -25,6 +25,19 @@ export const generateTestCasesSchema = z.object({
     )
     .max(20)
     .optional(),
+  recordedActions: z
+    .array(
+      z.object({
+        type: z.enum(["click", "input"]),
+        tag: z.string().nullable().optional(),
+        label: z.string().nullable().optional(),
+        value: z.string().nullable().optional(),
+        id: z.string().nullable().optional(),
+        url: z.string().nullable().optional(),
+        timestamp: z.number().optional(),
+      }),
+    )
+    .optional(),
   images: z.array(z.string().min(1).nullable()).max(10).optional(),
   userPrompt: z.string().nullable().optional(),
   conversationHistory: z
@@ -77,6 +90,19 @@ export const chatSchema = z.object({
       }),
     )
     .max(20)
+    .optional(),
+  recordedActions: z
+    .array(
+      z.object({
+        type: z.enum(["click", "input"]),
+        tag: z.string().nullable().optional(),
+        label: z.string().nullable().optional(),
+        value: z.string().nullable().optional(),
+        id: z.string().nullable().optional(),
+        url: z.string().nullable().optional(),
+        timestamp: z.number().optional(),
+      }),
+    )
     .optional(),
   images: z.array(z.string().min(1).nullable()).max(10).optional(),
   conversationHistory: z

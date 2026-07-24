@@ -168,6 +168,7 @@ function saveSessionState() {
       const existing = result?.["bgt-session-state"] || {};
       const state = {
         selectedElements: window.selectedElements || [],
+        recordedActions: window.recordedActions || [],
         conversationHistory: window.conversationHistory || [],
         nextInlineTestNumber: window.nextInlineTestNumber || 1,
         renderedTestCases: window.renderedTestCases || [],
@@ -199,6 +200,7 @@ function loadSessionState() {
         const state = result?.["bgt-session-state"];
         if (state) {
           window.selectedElements = state.selectedElements || [];
+          window.recordedActions = state.recordedActions || [];
           window.conversationHistory = state.conversationHistory || [];
           window.nextInlineTestNumber = state.nextInlineTestNumber || 1;
           window.renderedTestCases = state.renderedTestCases || [];
@@ -234,6 +236,7 @@ function clearSessionState() {
   try {
     window.selectedElements = [];
     window.selectedScreenshots = [];
+    window.recordedActions = [];
     window.renderedTestCases = [];
     window.conversationHistory = [];
     window.nextInlineTestNumber = 1;

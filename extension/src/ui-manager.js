@@ -323,9 +323,37 @@ function updateVisualSelectionBadges() {
   });
 }
 
+function renderRecordedActionsSummary() {
+  const actionsBlock = document.getElementById("bgt-recorded-actions");
+  if (!actionsBlock) return;
+
+  const actions = window.recordedActions || [];
+  if (actions.length === 0) {
+    actionsBlock.textContent = "Записані дії: 0";
+    actionsBlock.style.whiteSpace = "normal";
+    return;
+  }
+
+  const listText = actions
+    .slice(-5)
+    .map((a) => {
+      if (a.type === "click") {
+        return `👉 Клік: ${a.tag}${a.label ? ` "${a.label}"` : ""}`;
+      } else if (a.type === "input") {
+        return `✏️ Ввід: ${a.label ? `"${a.label}"` : a.tag} = "${a.value}"`;
+      }
+      return `${a.type}: ${a.label || a.tag}`;
+    })
+    .join("\n");
+
+  actionsBlock.style.whiteSpace = "pre-wrap";
+  actionsBlock.textContent = `Записані дії (${actions.length}):\n${listText}`;
+}
+
 function renderSelectedElementsSummary() {
   updateVisualSelectionBadges();
   renderEdgeCaseSuggestions();
+  renderRecordedActionsSummary();
 
   const selectedElementBlock = document.getElementById("bgt-selected-element");
   if (!selectedElementBlock) return;

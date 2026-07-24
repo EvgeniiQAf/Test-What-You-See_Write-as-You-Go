@@ -152,6 +152,20 @@ const mainPanelHtml = `
     No screenshots selected
   </div>
 
+  <div id="bgt-recorded-actions" style="
+    font-size: 11px;
+    background: #eff6ff;
+    color: #1e3a8a;
+    padding: 6px 8px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    max-height: 70px;
+    overflow: auto;
+    border: 1px solid #bfdbfe;
+  ">
+    Записані дії: 0
+  </div>
+
   <div id="bgt-chat" style="
     height: auto;
     min-height: 160px;
