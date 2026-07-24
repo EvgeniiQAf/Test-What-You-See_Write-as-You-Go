@@ -91,8 +91,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         type: "popup",
         left: left,
         top: top,
-        width: 520,
-        height: 640,
+        width: 550,
+        height: 760,
         focused: true,
       },
       (createdWindow) => {
