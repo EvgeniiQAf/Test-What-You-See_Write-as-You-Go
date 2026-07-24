@@ -39,25 +39,23 @@ document.addEventListener("click", async (event) => {
   window.selectedDomNodes.push(element);
   window.selectedElements.push(window.selectedElementData);
 
-  let selectedScreenshot = await captureScreenshot();
-  selectedScreenshot = await compressScreenshotDataUrl(selectedScreenshot);
-  
-  // Use a 1x1 transparent GIF placeholder if screenshot capture returns null
-  if (!selectedScreenshot) {
-    selectedScreenshot = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
-  }
+  // Wait 100ms for layout & active tab capture to settle down
+  await new Promise((r) => setTimeout(r, 100));
 
-  const screenshotLabel = `Фото ${window.selectedScreenshots.length + 1}: ${window.selectedElementData.tag}${window.selectedElementData.text || window.selectedElementData.ariaLabel || window.selectedElementData.placeholder ? ` - ${window.selectedElementData.text || window.selectedElementData.ariaLabel || window.selectedElementData.placeholder}` : ""}`;
-  const selectedCount = window.selectedScreenshots.filter((item) => item.selected !== false).length;
-  window.selectedScreenshots = [
-    ...window.selectedScreenshots,
-    {
-      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      dataUrl: selectedScreenshot,
-      label: screenshotLabel,
-      selected: selectedCount < 3, // default first 3 selected
-    },
-  ];
+  let selectedScreenshot = await captureScreenshot();
+  if (selectedScreenshot) {
+    const screenshotLabel = `Фото ${window.selectedScreenshots.length + 1}: ${window.selectedElementData.tag}${window.selectedElementData.text || window.selectedElementData.ariaLabel || window.selectedElementData.placeholder ? ` - ${window.selectedElementData.text || window.selectedElementData.ariaLabel || window.selectedElementData.placeholder}` : ""}`;
+    const selectedCount = window.selectedScreenshots.filter((item) => item.selected !== false).length;
+    window.selectedScreenshots = [
+      ...window.selectedScreenshots,
+      {
+        id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        dataUrl: selectedScreenshot,
+        label: screenshotLabel,
+        selected: selectedCount < 3, // default first 3 selected
+      },
+    ];
+  }
 
   updateVisualSelectionBadges();
   saveSessionState();

@@ -128,23 +128,26 @@ function addScreenshotMessage(screenshotDataUrl) {
   chatBlock.scrollTop = chatBlock.scrollHeight;
 }
 
-function captureScreenshot() {
+function captureScreenshot(retries = 3, delay = 150) {
   return new Promise((resolve) => {
-    chrome.runtime.sendMessage({ type: "CAPTURE_SCREENSHOT" }, async (response) => {
-      if (chrome.runtime.lastError) {
-        console.warn("Capture tab runtime error:", chrome.runtime.lastError.message);
-        resolve(null);
-        return;
-      }
+    function tryCapture(attempt) {
+      chrome.runtime.sendMessage({ type: "CAPTURE_SCREENSHOT" }, async (response) => {
+        if (chrome.runtime.lastError || !response?.screenshot) {
+          console.warn(`Capture tab attempt ${attempt} failed:`, chrome.runtime.lastError?.message || "No screenshot data");
+          if (attempt < retries) {
+            setTimeout(() => tryCapture(attempt + 1), delay);
+          } else {
+            resolve(null);
+          }
+          return;
+        }
 
-      const dataUrl = response?.screenshot || null;
-      if (!dataUrl) {
-        resolve(null);
-        return;
-      }
+        const dataUrl = response.screenshot;
+        const compressed = await compressScreenshotDataUrl(dataUrl);
+        resolve(compressed);
+      });
+    }
 
-      const compressed = await compressScreenshotDataUrl(dataUrl);
-      resolve(compressed);
-    });
+    tryCapture(1);
   });
 }
