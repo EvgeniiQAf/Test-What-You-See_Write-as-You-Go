@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>TWYS QA Helper - Microphone Permission</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 50px;
+      background: #f9fafb;
+      color: #111827;
+    }
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      display: inline-block;
+      max-width: 450px;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>🎙️ Надання дозволу на мікрофон</h2>
+    <p>Для того, щоб використовувати голосовий ввід у бічній панелі, Chrome вимагає надати дозвіл на використання мікрофона на цій сторінці.</p>
+    <p>Будь ласка, натисніть кнопку нижче і дозвольте доступ у спливаючому вікні Chrome.</p>
+    <button id="request-btn">Надати дозвіл 🎙️</button>
+  </div>
+  <script>
+    document.getElementById('request-btn').addEventListener('click', () => {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then((stream) => {
+          stream.getTracks().forEach(track => track.stop());
+          alert('Дозвіл успішно надано! Тепер ви можете закрити цю вкладку та використовувати голосовий ввід у бічній панелі.');
+          window.close();
+        })
+        .catch((err) => {
+          alert('Помилка: Не вдалося отримати дозвіл. Перевірте налаштування мікрофона в Chrome.');
+        });
+    });
+  </script>
+</body>
+</html>

@@ -2,23 +2,28 @@ console.log("TWYS QA Helper loaded (Side Panel Command Center Mode)");
 
 // Page interactions listeners
 document.addEventListener("mouseover", (event) => {
-  if (window.highlightedElement) {
-    window.highlightedElement.style.outline = "";
-  }
-  window.highlightedElement = event.target;
-  window.highlightedElement.style.outline = "3px solid red";
+  try {
+    if (!chrome.runtime || !chrome.runtime.id) return;
+    if (window.highlightedElement) {
+      window.highlightedElement.style.outline = "";
+    }
+    window.highlightedElement = event.target;
+    window.highlightedElement.style.outline = "3px solid red";
+  } catch (e) {}
 });
 
 document.addEventListener("click", async (event) => {
-  if (!event.shiftKey) {
-    return;
-  }
+  try {
+    if (!chrome.runtime || !chrome.runtime.id) return;
+    if (!event.shiftKey) {
+      return;
+    }
 
-  event.preventDefault();
-  event.stopPropagation();
-  event.stopImmediatePropagation();
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
 
-  const element = event.target;
+    const element = event.target;
 
   window.selectedElementData = normalizeSelectionItem({
     tag: element.tagName.toLowerCase(),
@@ -54,6 +59,9 @@ document.addEventListener("click", async (event) => {
   updateVisualSelectionBadges();
 
   console.log("Selected element saved locally:", window.selectedElementData);
+  } catch (error) {
+    console.debug("Extension context invalidated, skipping selection click", error);
+  }
 }, true);
 
 chrome.runtime.onMessage.addListener(async (message, _sender, sendResponse) => {
@@ -125,24 +133,32 @@ loadSessionState().then((loaded) => {
 });
 
 function pushRecordedAction(action) {
-  chrome.storage.local.get(["bgt-session-state"], (result) => {
-    const state = result?.["bgt-session-state"] || {};
-    const recordedActions = state.recordedActions || [];
-    recordedActions.push(action);
-    
-    if (recordedActions.length > 50) {
-      recordedActions.shift();
-    }
-    
-    state.recordedActions = recordedActions;
-    chrome.storage.local.set({ "bgt-session-state": state }, () => {
-      console.log("[DEBUG] Recorded action:", action);
-      chrome.runtime.sendMessage({ type: "SELECTION_UPDATED" }).catch(() => {});
+  try {
+    if (!chrome.runtime || !chrome.runtime.id) return;
+    chrome.storage.local.get(["bgt-session-state"], (result) => {
+      if (chrome.runtime.lastError) return;
+      const state = result?.["bgt-session-state"] || {};
+      const recordedActions = state.recordedActions || [];
+      recordedActions.push(action);
+      
+      if (recordedActions.length > 50) {
+        recordedActions.shift();
+      }
+      
+      state.recordedActions = recordedActions;
+      chrome.storage.local.set({ "bgt-session-state": state }, () => {
+        if (chrome.runtime.lastError) return;
+        console.log("[DEBUG] Recorded action:", action);
+        chrome.runtime.sendMessage({ type: "SELECTION_UPDATED" }).catch(() => {});
+      });
     });
-  });
+  } catch (error) {
+    console.debug("Extension context invalidated, skipping action record", error);
+  }
 }
 
 document.addEventListener("click", (event) => {
+  if (!chrome.runtime || !chrome.runtime.id) return;
   if (event.shiftKey) return;
 
   const element = event.target;
@@ -183,6 +199,7 @@ document.addEventListener("click", (event) => {
 }, true);
 
 document.addEventListener("change", (event) => {
+  if (!chrome.runtime || !chrome.runtime.id) return;
   const element = event.target;
   const tag = element.tagName.toLowerCase();
   if (tag !== "input" && tag !== "textarea" && tag !== "select") return;
