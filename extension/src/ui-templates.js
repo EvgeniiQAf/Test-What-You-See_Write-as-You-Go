@@ -241,17 +241,31 @@ const mainPanelHtml = `
     ">Add Test Case #1</button>
   </div>
 
-  <button id="bgt-send" style="
-    width: 100%;
-    padding: 8px;
-    background: #2563eb;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-  ">
-    Send
-  </button>
+  <div style="display:flex; gap:6px;">
+    <button id="bgt-voice" style="
+      width: 40px;
+      padding: 8px;
+      background: #f3f4f6;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 16px;
+    " title="Голосовий ввід (Voice Input)">🎙️</button>
+    <button id="bgt-send" style="
+      flex: 1;
+      padding: 8px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    ">
+      Send
+    </button>
+  </div>
 `;
 
 function addMessage(role, text, options = {}) {

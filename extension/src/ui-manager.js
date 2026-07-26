@@ -113,6 +113,132 @@ function initializeUiPanelListeners() {
     });
   });
 
+  let speechRecognition = null;
+  let isRecordingVoice = false;
+
+  const voiceButton = document.getElementById("bgt-voice");
+  if (voiceButton) {
+    voiceButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      
+      if (isRecordingVoice) {
+        stopVoiceRecording();
+      } else {
+        startVoiceRecording();
+      }
+    });
+  }
+
+  function startVoiceRecording() {
+    const SpeechClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechClass) {
+      setStatus("Voice not supported in this browser", "#b91c1c");
+      return;
+    }
+
+    try {
+      speechRecognition = new SpeechClass();
+      speechRecognition.continuous = false;
+      speechRecognition.interimResults = false;
+
+      const langValue = settingLang?.value || "default";
+      speechRecognition.lang = (langValue === "en") ? "en-US" : "uk-UA";
+
+      speechRecognition.onstart = () => {
+        isRecordingVoice = true;
+        voiceButton.style.background = "#fee2e2";
+        voiceButton.style.borderColor = "#ef4444";
+        voiceButton.textContent = "🔴";
+        setStatus("Listening...", "#b45309");
+      };
+
+      speechRecognition.onerror = (e) => {
+        console.error("Speech recognition error:", e);
+        setStatus(`Voice error: ${e.error}`, "#b91c1c");
+        stopVoiceRecording();
+      };
+
+      speechRecognition.onend = () => {
+        stopVoiceRecording();
+      };
+
+      speechRecognition.onresult = (event) => {
+        const result = event.results[0]?.[0]?.transcript;
+        if (result) {
+          handleVoiceResult(result);
+        }
+      };
+
+      speechRecognition.start();
+    } catch (err) {
+      console.error(err);
+      setStatus("Failed to start voice", "#b91c1c");
+    }
+  }
+
+  function stopVoiceRecording() {
+    isRecordingVoice = false;
+    if (voiceButton) {
+      voiceButton.style.background = "#f3f4f6";
+      voiceButton.style.borderColor = "#d1d5db";
+      voiceButton.textContent = "🎙️";
+    }
+    setStatus("idle");
+    if (speechRecognition) {
+      try {
+        speechRecognition.stop();
+      } catch (e) {}
+    }
+  }
+
+  function handleVoiceResult(text) {
+    if (!input) return;
+
+    console.log("[DEBUG] Voice result:", text);
+    const commandRegex = /(?:тест\s*кейс|тест|test\s*case|test)\s*(один|два|три|чотири|п['’]ять|шість|сім|вісім|дев['’]ять|десять|\d+)/iu;
+    const match = text.match(commandRegex);
+
+    if (match) {
+      const numWord = match[1].toLowerCase();
+      let num = parseInt(numWord, 10);
+      if (isNaN(num)) {
+        const numbersMap = {
+          "один": 1, "one": 1,
+          "два": 2, "two": 2,
+          "три": 3, "three": 3,
+          "чотири": 4, "four": 4,
+          "п'ять": 5, "п’ять": 5, "five": 5,
+          "шість": 6, "six": 6,
+          "сім": 7, "seven": 7,
+          "вісім": 8, "eight": 8,
+          "дев'ять": 9, "дев’ять": 9, "nine": 9,
+          "десять": 10, "ten": 10
+        };
+        num = numbersMap[numWord] || 1;
+      }
+
+      const testMarker = `Test ${num}: `;
+      const cleanedText = text.replace(commandRegex, "").trim();
+      
+      const before = input.value.slice(0, input.selectionStart || 0);
+      const after = input.value.slice(input.selectionEnd || 0);
+      const needsNewLine = before.length > 0 && !before.endsWith("\n");
+      
+      input.value = `${before}${needsNewLine ? "\n" : ""}${testMarker}${cleanedText}${after}`;
+      window.nextInlineTestNumber = num + 1;
+      updateAddTestButtonLabel();
+    } else {
+      const before = input.value.slice(0, input.selectionStart || 0);
+      const after = input.value.slice(input.selectionEnd || 0);
+      const space = before.length > 0 && !before.endsWith(" ") && !before.endsWith("\n") ? " " : "";
+      input.value = `${before}${space}${text}${after}`;
+    }
+
+    input.focus();
+    saveSessionState();
+  }
+
   sendButton?.addEventListener("click", () => {
     sendPrompt();
   });
