@@ -17,6 +17,18 @@ export class ChatService {
       .replace(/\s*[-|]\s*TripLink\s*$/i, "")
       .replace(/^TripLink\s*[-|]\s*/i, "")
       .trim();
+    const recordedActionsContext = (input.recordedActions || [])
+      .map((action, idx) => {
+        const timeStr = action.timestamp ? `[+${Math.round((action.timestamp - (input.recordedActions?.[0]?.timestamp || 0)) / 1000)}s]` : "";
+        if (action.type === "click") {
+          return `${idx + 1}. Click ${action.tag} "${action.label || ""}" (id: ${action.id || "N/A"}) at ${action.url || "N/A"} ${timeStr}`;
+        } else if (action.type === "input") {
+          return `${idx + 1}. Type in ${action.tag} "${action.label || ""}" value: "${action.value || ""}" at ${action.url || "N/A"} ${timeStr}`;
+        }
+        return `${idx + 1}. Action: ${action.type} on ${action.tag} "${action.label || ""}" at ${action.url || "N/A"} ${timeStr}`;
+      })
+      .join("\n");
+
     const contextLines = [
       `pageTitle: ${normalizedPageTitle || "N/A"}`,
       `selectedText: ${input.selectedText || "N/A"}`,
@@ -26,6 +38,7 @@ export class ChatService {
       `elementTag: ${input.elementTag || "N/A"}`,
       `html: ${input.html || "N/A"}`,
       `url: ${input.url || "N/A"}`,
+      `recordedActions:\n${recordedActionsContext || "N/A"}`
     ].join("\n");
 
     const userMessageContent = images.length > 0
