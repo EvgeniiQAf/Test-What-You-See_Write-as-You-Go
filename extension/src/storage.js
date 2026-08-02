@@ -9,7 +9,7 @@ function loadConversationHistory() {
         const text = String(item.content || "").trim();
         return {
           ...item,
-          content: text.length > 500 ? text.slice(0, 500) + "... (truncated)" : text,
+          content: text.length > 3000 ? text.slice(0, 3000) + "... (truncated)" : text,
         };
       });
     }
@@ -30,7 +30,7 @@ function saveConversationHistory(history) {
 
 function pushHistory(role, content) {
   const textContent = String(content || "").trim();
-  const cleaned = textContent.length > 500 ? textContent.slice(0, 500) + "... (truncated)" : textContent;
+  const cleaned = textContent.length > 3000 ? textContent.slice(0, 3000) + "... (truncated)" : textContent;
   window.conversationHistory = [...window.conversationHistory, {
     role,
     content: cleaned,

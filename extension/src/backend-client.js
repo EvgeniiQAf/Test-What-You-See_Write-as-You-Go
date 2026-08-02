@@ -98,48 +98,29 @@ async function sendPrompt() {
     finalCustomInstructions = `Preconditions:\n${lastPreconditions}\n\n${customInstructions}`.trim();
   }
 
-  const payload = shouldGenerateTests
-    ? {
-      html: primarySelection?.outerHTML || "",
-      url: pageUrl,
-      pageTitle,
-      selectedText,
-      elementLabel,
-      ariaLabel,
-      placeholder,
-      elementTag,
-      selectedElements: normalizedSelectedElements,
-      recordedActions: window.recordedActions || [],
-      images: normalizedSelectedScreenshots.slice(0, MAX_SELECTED_SCREENSHOTS),
-      userPrompt,
-      conversationHistory: window.conversationHistory,
-      preferenceProfile,
-      preferredLlm,
-      language,
-      customInstructions: finalCustomInstructions,
-    }
-    : {
-      userPrompt,
-      html: primarySelection?.outerHTML || "",
-      url: pageUrl,
-      pageTitle,
-      selectedText,
-      elementLabel,
-      ariaLabel,
-      placeholder,
-      elementTag,
-      selectedElements: normalizedSelectedElements,
-      recordedActions: window.recordedActions || [],
-      images: normalizedSelectedScreenshots.slice(0, MAX_SELECTED_SCREENSHOTS),
-      conversationHistory: window.conversationHistory,
-      preferenceProfile,
-      preferredLlm,
-      format,
-      language,
-      customInstructions: finalCustomInstructions,
-    };
+  const payload = {
+    userPrompt,
+    html: primarySelection?.outerHTML || "",
+    url: pageUrl,
+    pageTitle,
+    selectedText,
+    elementLabel,
+    ariaLabel,
+    placeholder,
+    elementTag,
+    selectedElements: normalizedSelectedElements,
+    recordedActions: window.recordedActions || [],
+    images: normalizedSelectedScreenshots.slice(0, MAX_SELECTED_SCREENSHOTS),
+    conversationHistory: window.conversationHistory,
+    generatedTestCases: window.renderedTestCases || [],
+    preferenceProfile,
+    preferredLlm,
+    format,
+    language,
+    customInstructions: finalCustomInstructions,
+  };
 
-  const pendingMessage = addMessage("assistant", shouldGenerateTests ? "Generating test case(s)..." : "Thinking...");
+  const pendingMessage = addMessage("assistant", "Thinking...");
   console.log("Payload ready:", payload);
 
   const controller = new AbortController();
@@ -148,16 +129,14 @@ async function sendPrompt() {
   let elapsedSeconds = 0;
   const updateInterval = setInterval(() => {
     elapsedSeconds++;
-    const msg = elapsedSeconds > 15 ? `generating (${elapsedSeconds}s) - waiting for LLM...` : `generating (${elapsedSeconds}s)`;
+    const msg = elapsedSeconds > 15 ? `processing (${elapsedSeconds}s) - waiting for LLM...` : `processing (${elapsedSeconds}s)`;
     setStatus(msg, "#b45309");
   }, 1000);
 
   try {
     setStatus("sending request", "#b45309");
 
-    const endpoint = shouldGenerateTests
-      ? "http://localhost:3000/api/generate-testcases"
-      : "http://localhost:3000/api/chat";
+    const endpoint = "http://localhost:3000/api/chat";
 
     const response = await new Promise((resolve) => {
       chrome.runtime.sendMessage(
@@ -183,22 +162,34 @@ async function sendPrompt() {
     const result = response.data;
 
     console.log("Server response:", result);
-    setStatus(shouldGenerateTests ? "test case generated" : "assistant replied", "#15803d");
+    setStatus("assistant replied", "#15803d");
 
-    if (shouldGenerateTests) {
-      if (result.reply) {
-        pendingMessage.textContent = result.reply;
-        pushHistory("assistant", result.reply);
-      } else if (result.testCases && Array.isArray(result.testCases)) {
-        pendingMessage.textContent = `Generated ${result.testCases.length} test case(s) (took ${elapsedSeconds}s).`;
-        pushHistory("assistant", `Generated ${result.testCases.length} test case(s).`);
-        renderTestCases(result.testCases);
-      } else {
-        pendingMessage.textContent = `Server response:\n${JSON.stringify(result, null, 2)}`;
-      }
+    const replyText = result?.reply || (result?.testCases && result.testCases.length ? `Generated ${result.testCases.length} test case(s).` : "No response text.");
+    pendingMessage.textContent = replyText;
+
+    if (result.testCases && Array.isArray(result.testCases) && result.testCases.length > 0) {
+      const summaryText = result.testCases.map((tc, idx) => {
+        const tUA = tc.title?.ua || "";
+        const tEN = tc.title?.en || "";
+        const title = tUA && tEN ? `${tUA} / ${tEN}` : (tUA || tEN || `Test ${idx + 1}`);
+        const preUA = (tc.preconditions?.ua || []).join("; ");
+        const preEN = (tc.preconditions?.en || []).join("; ");
+        const preStr = preUA || preEN ? ` (Preconditions: ${preUA || preEN})` : "";
+        const stepsStr = (tc.steps || []).map((s, si) => {
+          const act = s.step?.ua || s.step?.en || "";
+          const expUA = (s.expectedResults?.ua || []).join("; ");
+          const expEN = (s.expectedResults?.en || []).join("; ");
+          const exp = expUA || expEN;
+          return `Step ${si + 1}: ${act}${exp ? ` -> Expected: ${exp}` : ""}`;
+        }).join("\n  ");
+        return `Test #${idx + 1}: ${title}${preStr}\n  ${stepsStr}`;
+      }).join("\n\n");
+
+      pushHistory("assistant", `${replyText}\n\nGenerated test case(s):\n${summaryText}`);
+      renderTestCases(result.testCases);
 
       if (result?.debug) {
-        console.log("[DEBUG] Screenshot delivery result:", result.debug);
+        console.log("[DEBUG] Delivery result:", result.debug);
       }
 
       window.nextInlineTestNumber = 1;
@@ -210,10 +201,8 @@ async function sendPrompt() {
       renderSelectedScreenshotsSummary();
       renderSelectedElementsSummary();
       
-      // Save lightweight state to clear selections from storage, but keep chat history
       saveSessionState();
       
-      // Clear outlines on all tabs
       try {
         chrome.tabs.query({}, (tabs) => {
           (tabs || []).forEach((tab) => {
@@ -225,13 +214,8 @@ async function sendPrompt() {
       } catch (e) {
         console.warn(e);
       }
-      
-      console.log("Screenshots and elements cleared after successful response.");
-
     } else {
-      const reply = result?.reply || "No response text.";
-      pendingMessage.textContent = reply;
-      pushHistory("assistant", reply);
+      pushHistory("assistant", replyText);
     }
   } catch (error) {
     console.error("Failed to send payload:", error);
@@ -241,14 +225,9 @@ async function sendPrompt() {
       errorMsg = "Request timeout (3 minutes exceeded) - LLM is taking too long or API is overloaded";
     }
     
-    setStatus(shouldGenerateTests ? "failed to generate test" : "chat failed", "#b91c1c");
-    pendingMessage.textContent = `❌ ${shouldGenerateTests ? "Failed to generate test case" : "Failed to get chat reply"}: ${errorMsg}`;
+    setStatus("chat failed", "#b91c1c");
+    pendingMessage.textContent = `❌ Failed to get reply: ${errorMsg}`;
     pendingMessage.style.background = "#fee2e2";
-
-    if (shouldGenerateTests) {
-      window.nextInlineTestNumber = 1;
-      updateAddTestButtonLabel();
-    }
   } finally {
     clearTimeout(timeoutId);
     clearInterval(updateInterval);

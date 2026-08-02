@@ -3,9 +3,13 @@ import { buildLlmMultimodalContent } from "./llm/llm.helper";
 import { LlmMessage } from "./llm/llm.types";
 import { LLM_PROMPTS } from "../prompts/llm.prompts";
 import { ChatInput } from "../validations/generate.validation";
+import { LlmParserService } from "./llm-parser.service";
+import { TestCase } from "../types/generate.types";
 
 export class ChatService {
-  public async chatWithAssistant(input: ChatInput): Promise<string> {
+  private llmParser = new LlmParserService();
+
+  public async chatWithAssistant(input: ChatInput): Promise<{ reply?: string; testCases?: TestCase[] }> {
     const history = input.conversationHistory || [];
     const preferenceProfile = input.preferenceProfile || {};
     const images = Array.isArray(input.images)
@@ -29,16 +33,51 @@ export class ChatService {
       })
       .join("\n");
 
+    const generatedTestCasesContext = (input.generatedTestCases || [])
+      .map((tc: any, idx: number) => {
+        const titleUa = tc.title?.ua || "";
+        const titleEn = tc.title?.en || "";
+        const preUa = (tc.preconditions?.ua || []).join("; ");
+        const preEn = (tc.preconditions?.en || []).join("; ");
+        const steps = (tc.steps || [])
+          .map((s: any, sIdx: number) => {
+            const stepUa = s.step?.ua || "";
+            const stepEn = s.step?.en || "";
+            const expUa = (s.expectedResults?.ua || []).join("; ");
+            const expEn = (s.expectedResults?.en || []).join("; ");
+            return `  Step ${sIdx + 1}:
+    Action (UA): ${stepUa}
+    Action (EN): ${stepEn}
+    Expected (UA): ${expUa}
+    Expected (EN): ${expEn}`;
+          })
+          .join("\n");
+
+        return `Test #${idx + 1}:
+  Title (UA): ${titleUa}
+  Title (EN): ${titleEn}
+  Preconditions (UA): ${preUa}
+  Preconditions (EN): ${preEn}
+${steps}`;
+      })
+      .join("\n\n");
+
+    const rawHtml = String(input.html || "N/A").trim();
+    const htmlContent = rawHtml.length > 3500 ? rawHtml.slice(0, 3500) + "... (truncated)" : rawHtml;
+    const selectedTextContent = String(input.selectedText || "N/A").trim();
+    const truncatedSelectedText = selectedTextContent.length > 1000 ? selectedTextContent.slice(0, 1000) + "... (truncated)" : selectedTextContent;
+
     const contextLines = [
       `pageTitle: ${normalizedPageTitle || "N/A"}`,
-      `selectedText: ${input.selectedText || "N/A"}`,
+      `selectedText: ${truncatedSelectedText || "N/A"}`,
       `elementLabel: ${input.elementLabel || "N/A"}`,
       `ariaLabel: ${input.ariaLabel || "N/A"}`,
       `placeholder: ${input.placeholder || "N/A"}`,
       `elementTag: ${input.elementTag || "N/A"}`,
-      `html: ${input.html || "N/A"}`,
+      `html: ${htmlContent || "N/A"}`,
       `url: ${input.url || "N/A"}`,
-      `recordedActions:\n${recordedActionsContext || "N/A"}`
+      `recordedActions:\n${recordedActionsContext || "N/A"}`,
+      `generatedTestCases:\n${generatedTestCasesContext || "N/A"}`
     ].join("\n");
 
     const userMessageContent = images.length > 0
@@ -61,9 +100,9 @@ export class ChatService {
         role: "system",
         content: `Current context:\n${contextLines}`,
       },
-      ...history.slice(-10).map((item): LlmMessage => {
+      ...history.slice(-6).map((item): LlmMessage => {
         const content = String(item.content || "").trim();
-        const truncated = content.length > 500 ? content.slice(0, 500) + "... (truncated)" : content;
+        const truncated = content.length > 1200 ? content.slice(0, 1200) + "... (truncated)" : content;
         return {
           role: item.role as "user" | "assistant",
           content: truncated,
@@ -84,12 +123,31 @@ export class ChatService {
 
     const provider = LlmFactory.getProvider(input.preferredLlm);
 
+    const parseReplyResult = (rawContent: string) => {
+      const trimmed = String(rawContent || "").trim();
+      if (trimmed.includes('"testCases"') || trimmed.includes("testCases")) {
+        try {
+          const parsed = this.llmParser.parseOpenAiResponse(trimmed) as any;
+          if (Array.isArray(parsed?.testCases) && parsed.testCases.length > 0) {
+            const normalized = this.llmParser.normalizeTestCasesFromOpenAi(parsed.testCases, input as any);
+            return {
+              reply: parsed.reply || `Згенеровано ${normalized.length} тест-кейс(ів):`,
+              testCases: normalized,
+            };
+          }
+        } catch (jsonErr) {
+          console.warn("[CHAT SERVICE] Response hinted at testCases JSON but failed parsing:", jsonErr);
+        }
+      }
+      return { reply: trimmed };
+    };
+
     try {
-      const reply = await provider.chatCompletion(messages, {
+      const rawReply = await provider.chatCompletion(messages, {
         temperature: 0.3,
       });
 
-      return reply.trim();
+      return parseReplyResult(rawReply);
     } catch (error) {
       if (images.length > 0) {
         console.warn("[CHAT SERVICE] Image input rejected, retrying without images.");
@@ -108,7 +166,7 @@ export class ChatService {
           temperature: 0.3,
         });
 
-        return fallbackReply.trim();
+        return parseReplyResult(fallbackReply);
       }
 
       throw error;

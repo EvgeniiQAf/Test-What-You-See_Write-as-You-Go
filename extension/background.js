@@ -167,12 +167,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         });
       })
       .catch((error) => {
+        console.error("[BACKGROUND FETCH ERROR]", error);
+        let errorMsg = error.message || String(error);
+        if (errorMsg === "Failed to fetch" || errorMsg.includes("fetch")) {
+          errorMsg = "Не вдалося з'єднатися з локальним сервером (http://localhost:3000). Перевірте, чи запущено сервер (`npm run dev` у папці /server)!";
+        }
         sendResponse({
           ok: false,
-          error: error.message
+          error: errorMsg
         });
       });
 
+    return true;
+  }
+
+  if (message.type === "OPEN_VOICE_PERMISSION") {
+    chrome.tabs.create({ url: chrome.runtime.getURL("voice-permission.html") }, (tab) => {
+      sendResponse({ ok: true, tabId: tab?.id });
+    });
+    return true;
+  }
+
+  if (message.type === "VOICE_RESULT" || message.type === "VOICE_STATUS") {
+    chrome.runtime.sendMessage(message).catch(() => {});
     return true;
   }
 });

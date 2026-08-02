@@ -73,6 +73,38 @@ chrome.runtime.onMessage.addListener(async (message, _sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === "START_AUDIO_RECORDING") {
+    startTabAudioRecording();
+    sendResponse({ ok: true });
+    return true;
+  }
+
+  if (message.type === "STOP_AUDIO_RECORDING") {
+    stopTabAudioRecording();
+    sendResponse({ ok: true });
+    return true;
+  }
+
+  if (message.type === "REQUEST_MIC_PERMISSION") {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      sendResponse({ ok: false, error: "getUserMedia not supported on this page" });
+      return true;
+    }
+
+    navigator.mediaDevices
+      .getUserMedia({ audio: true })
+      .then((stream) => {
+        stream.getTracks().forEach((track) => track.stop());
+        sendResponse({ ok: true });
+      })
+      .catch((err) => {
+        console.warn("[TWYS] Microphone permission request denied in tab:", err);
+        sendResponse({ ok: false, error: err.message || String(err) });
+      });
+
+    return true;
+  }
+
   if (message.type === "CLEAR_HIGHLIGHTS") {
     clearVisualSelectionBadges();
     window.selectedDomNodes = [];
@@ -224,3 +256,136 @@ document.addEventListener("change", (event) => {
 
   pushRecordedAction(action);
 }, true);
+
+let tabMediaRecorder = null;
+let tabAudioChunks = [];
+let isTabAudioRecording = false;
+
+function startTabAudioRecording() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    chrome.runtime.sendMessage({
+      type: "VOICE_STATUS",
+      statusText: "Мікрофон не підтримується на цій сторінці",
+      isError: true,
+      isRecording: false,
+    }).catch(() => {});
+    return;
+  }
+
+  navigator.mediaDevices.getUserMedia({ audio: true })
+    .then((stream) => {
+      tabAudioChunks = [];
+      const options = MediaRecorder.isTypeSupported("audio/webm")
+        ? { mimeType: "audio/webm" }
+        : MediaRecorder.isTypeSupported("audio/mp4")
+        ? { mimeType: "audio/mp4" }
+        : {};
+
+      tabMediaRecorder = new MediaRecorder(stream, options);
+
+      tabMediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          tabAudioChunks.push(event.data);
+        }
+      };
+
+      tabMediaRecorder.onstart = () => {
+        isTabAudioRecording = true;
+        chrome.runtime.sendMessage({
+          type: "VOICE_STATUS",
+          statusText: "🔴 Запис аудіо... Натисніть кнопку ще раз для відправки",
+          isRecording: true,
+        }).catch(() => {});
+      };
+
+      tabMediaRecorder.onstop = async () => {
+        isTabAudioRecording = false;
+        stream.getTracks().forEach((track) => track.stop());
+
+        if (tabAudioChunks.length === 0) {
+          chrome.runtime.sendMessage({
+            type: "VOICE_STATUS",
+            statusText: "Аудіо не записано, спробуйте ще раз",
+            isError: true,
+            isRecording: false,
+          }).catch(() => {});
+          return;
+        }
+
+        const mimeType = tabMediaRecorder.mimeType || "audio/webm";
+        const audioBlob = new Blob(tabAudioChunks, { type: mimeType });
+
+        if (audioBlob.size < 500) {
+          chrome.runtime.sendMessage({
+            type: "VOICE_STATUS",
+            statusText: "Запис занадто короткий",
+            isRecording: false,
+          }).catch(() => {});
+          return;
+        }
+
+        chrome.runtime.sendMessage({
+          type: "VOICE_STATUS",
+          statusText: "⏳ Розшифровка голосу (Whisper API)...",
+          isRecording: false,
+        }).catch(() => {});
+
+        try {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const base64Audio = reader.result;
+
+            chrome.runtime.sendMessage(
+              {
+                type: "MAKE_BACKEND_REQUEST",
+                endpoint: "http://localhost:3000/api/transcribe",
+                method: "POST",
+                payload: { audio: base64Audio },
+              },
+              (response) => {
+                if (response && response.ok && response.data?.text) {
+                  chrome.runtime.sendMessage({
+                    type: "VOICE_RESULT",
+                    text: response.data.text,
+                    isFinal: true,
+                  }).catch(() => {});
+                } else {
+                  const err = response?.data?.error || response?.error || "Помилка розшифровки";
+                  console.error("[WHISPER ERROR]", err);
+                  chrome.runtime.sendMessage({
+                    type: "VOICE_STATUS",
+                    statusText: `Whisper error: ${err}`,
+                    isError: true,
+                    isRecording: false,
+                  }).catch(() => {});
+                }
+              }
+            );
+          };
+          reader.readAsDataURL(audioBlob);
+        } catch (err) {
+          console.error("[TAB AUDIO CONVERT ERROR]", err);
+        }
+      };
+
+      tabMediaRecorder.start(250);
+    })
+    .catch((err) => {
+      console.warn("[TAB AUDIO MIC PERMISSION DENIED]", err);
+      chrome.runtime.sendMessage({
+        type: "VOICE_STATUS",
+        statusText: "Будь ласка, дозвольте мікрофон у сповіщенні під адресною строкою!",
+        isError: true,
+        isRecording: false,
+      }).catch(() => {});
+    });
+}
+
+function stopTabAudioRecording() {
+  isTabAudioRecording = false;
+  if (tabMediaRecorder && tabMediaRecorder.state !== "inactive") {
+    try {
+      tabMediaRecorder.stop();
+    } catch (e) {}
+  }
+}

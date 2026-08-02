@@ -1,7 +1,11 @@
 export const normalizeScreenTitle = (value: string): string => {
-  return String(value || "")
-    .replace(/\s*[-|]\s*TripLink\s*$/i, "")
-    .replace(/^TripLink\s*[-|]\s*/i, "")
+  const raw = String(value || "");
+  if (/twys|side panel|qa helper/i.test(raw)) {
+    return "";
+  }
+  return raw
+    .replace(/\s*[-|]\s*(?:TripLink|TWYS QA Helper|Side Panel|TWYS)\s*$/i, "")
+    .replace(/^(?:TripLink|TWYS QA Helper|Side Panel|TWYS)\s*[-|]\s*/i, "")
     .trim();
 };
 

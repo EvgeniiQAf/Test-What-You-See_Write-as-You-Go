@@ -41,18 +41,7 @@
     <p>Будь ласка, натисніть кнопку нижче і дозвольте доступ у спливаючому вікні Chrome.</p>
     <button id="request-btn">Надати дозвіл 🎙️</button>
   </div>
-  <script>
-    document.getElementById('request-btn').addEventListener('click', () => {
-      navigator.mediaDevices.getUserMedia({ audio: true })
-        .then((stream) => {
-          stream.getTracks().forEach(track => track.stop());
-          alert('Дозвіл успішно надано! Тепер ви можете закрити цю вкладку та використовувати голосовий ввід у бічній панелі.');
-          window.close();
-        })
-        .catch((err) => {
-          alert('Помилка: Не вдалося отримати дозвіл. Перевірте налаштування мікрофона в Chrome.');
-        });
-    });
-  </script>
+  </div>
+  <script src="voice-permission.js"></script>
 </body>
 </html>

@@ -26,7 +26,8 @@ export class App {
 
   private configureMiddlewares(): void {
     this.app.use(cors());
-    this.app.use(express.json({ limit: "10mb" }));
+    this.app.use(express.json({ limit: "50mb" }));
+    this.app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
     // Request logging middleware
     this.app.use((req, res, next) => {

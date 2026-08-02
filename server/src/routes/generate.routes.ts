@@ -40,5 +40,9 @@ export class GenerateRoutes {
       "/chat",
       asyncHandler(this.chatController.chatWithAssistant),
     );
+    this.router.post(
+      "/transcribe",
+      asyncHandler(this.chatController.transcribeAudio),
+    );
   }
 }

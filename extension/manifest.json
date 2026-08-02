@@ -47,5 +47,11 @@
       },
       "description": "Quick screenshot active tab"
     }
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["voice-permission.html", "voice-permission.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }

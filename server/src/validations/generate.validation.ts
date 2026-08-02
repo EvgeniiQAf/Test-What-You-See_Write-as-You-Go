@@ -128,6 +128,7 @@ export const chatSchema = z.object({
   format: z.enum(["steps", "bdd"]).optional(),
   language: z.enum(["default", "ua", "en", "bilingual"]).optional(),
   customInstructions: z.string().optional(),
+  generatedTestCases: z.array(z.any()).optional(),
 });
 
 export const testmoStepSchema = z.object({

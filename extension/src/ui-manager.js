@@ -83,14 +83,6 @@ function initializeUiPanelListeners() {
     toggleSettingsButton.style.background = isHidden ? "#e5e7eb" : "#fff";
   });
 
-  generateTestsCheckbox?.addEventListener("change", (event) => {
-    setTestModeHint(event.target.checked, "manual");
-  });
-
-  settingFormat?.addEventListener("change", () => {
-    setTestModeHint(generateTestsCheckbox?.checked, "manual");
-  });
-
   [settingFormat, settingLang, settingLlm].forEach((el) => {
     el?.addEventListener("change", () => {
       if (!settingFormat || !settingLang || !settingLlm || !settingRules) return;
@@ -113,91 +105,262 @@ function initializeUiPanelListeners() {
     });
   });
 
-  let speechRecognition = null;
-  let isRecordingVoice = false;
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let isRecordingAudio = false;
 
   const voiceButton = document.getElementById("bgt-voice");
   if (voiceButton) {
     voiceButton.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
-      
-      if (isRecordingVoice) {
-        stopVoiceRecording();
-      } else {
-        startVoiceRecording();
-      }
+      toggleVoiceRecording();
     });
   }
 
-  function startVoiceRecording() {
-    const SpeechClass = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechClass) {
-      setStatus("Voice not supported in this browser", "#b91c1c");
+  function toggleVoiceRecording() {
+    if (isRecordingAudio) {
+      stopAudioRecording();
+    } else {
+      startAudioRecording();
+    }
+  }
+
+  function findActiveWebTab(callback) {
+    chrome.tabs.query({ active: true }, (tabs) => {
+      if (chrome.runtime.lastError || !tabs || tabs.length === 0) {
+        callback(null);
+        return;
+      }
+      const webTab = tabs.find((t) => t.url && /^https?:\/\//i.test(t.url)) || tabs[0];
+      callback(webTab || null);
+    });
+  }
+
+  async function startAudioRecording() {
+    setStatus("Запуск аудіозапису...", "#b45309");
+
+    findActiveWebTab((activeTab) => {
+      if (!activeTab || !activeTab.id) {
+        startLocalAudioRecording();
+        return;
+      }
+
+      chrome.tabs.sendMessage(activeTab.id, { type: "START_AUDIO_RECORDING" }, (res) => {
+        if (chrome.runtime.lastError) {
+          console.warn("[VOICE TAB ERROR] Injecting content script into active tab:", activeTab.id);
+          chrome.scripting.executeScript(
+            {
+              target: { tabId: activeTab.id },
+              files: [
+                "src/state.js",
+                "src/utils.js",
+                "src/storage.js",
+                "src/ui-templates.js",
+                "src/ui-manager.js",
+                "src/screenshot-manager.js",
+                "src/backend-client.js",
+                "content.js",
+              ],
+            },
+            () => {
+              if (chrome.runtime.lastError) {
+                startLocalAudioRecording();
+              } else {
+                chrome.tabs.sendMessage(activeTab.id, { type: "START_AUDIO_RECORDING" }, (retryRes) => {
+                  if (chrome.runtime.lastError) {
+                    startLocalAudioRecording();
+                  }
+                });
+              }
+            }
+          );
+        }
+      });
+    });
+  }
+
+  function stopAudioRecording() {
+    findActiveWebTab((activeTab) => {
+      if (activeTab?.id) {
+        chrome.tabs.sendMessage(activeTab.id, { type: "STOP_AUDIO_RECORDING" }).catch(() => {});
+      }
+    });
+
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+      try { mediaRecorder.stop(); } catch (e) {}
+    }
+  }
+
+  async function startLocalAudioRecording() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setStatus("Мікрофон не підтримується у цьому браузері", "#b91c1c");
       return;
     }
 
     try {
-      speechRecognition = new SpeechClass();
-      speechRecognition.continuous = false;
-      speechRecognition.interimResults = false;
+      setStatus("Запит дозволу на мікрофон...", "#b45309");
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      const langValue = settingLang?.value || "default";
-      speechRecognition.lang = (langValue === "en") ? "en-US" : "uk-UA";
+      audioChunks = [];
+      const options = MediaRecorder.isTypeSupported("audio/webm")
+        ? { mimeType: "audio/webm" }
+        : MediaRecorder.isTypeSupported("audio/mp4")
+        ? { mimeType: "audio/mp4" }
+        : {};
 
-      speechRecognition.onstart = () => {
-        isRecordingVoice = true;
-        voiceButton.style.background = "#fee2e2";
-        voiceButton.style.borderColor = "#ef4444";
-        voiceButton.textContent = "🔴";
-        setStatus("Listening...", "#b45309");
-      };
+      mediaRecorder = new MediaRecorder(stream, options);
 
-      speechRecognition.onerror = (e) => {
-        console.error("Speech recognition error:", e);
-        setStatus(`Voice error: ${e.error}`, "#b91c1c");
-        stopVoiceRecording();
-      };
-
-      speechRecognition.onend = () => {
-        stopVoiceRecording();
-      };
-
-      speechRecognition.onresult = (event) => {
-        const result = event.results[0]?.[0]?.transcript;
-        if (result) {
-          handleVoiceResult(result);
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          audioChunks.push(event.data);
         }
       };
 
-      speechRecognition.start();
+      mediaRecorder.onstart = () => {
+        isRecordingAudio = true;
+        if (voiceButton) {
+          voiceButton.style.background = "#fee2e2";
+          voiceButton.style.borderColor = "#ef4444";
+          voiceButton.textContent = "🔴";
+        }
+        setStatus("🔴 Запис аудіо... Натисніть кнопку ще раз для відправки", "#b45309");
+      };
+
+      mediaRecorder.onstop = async () => {
+        isRecordingAudio = false;
+        stream.getTracks().forEach((track) => track.stop());
+
+        if (voiceButton) {
+          voiceButton.style.background = "#f3f4f6";
+          voiceButton.style.borderColor = "#d1d5db";
+          voiceButton.textContent = "🎙️";
+        }
+
+        if (audioChunks.length === 0) {
+          setStatus("Аудіо не записано, спробуйте ще раз", "#b91c1c");
+          return;
+        }
+
+        const mimeType = mediaRecorder.mimeType || "audio/webm";
+        const audioBlob = new Blob(audioChunks, { type: mimeType });
+
+        if (audioBlob.size < 500) {
+          setStatus("Запис занадто короткий", "#b45309");
+          return;
+        }
+
+        const base64Audio = await blobToBase64(audioBlob);
+        sendAudioToWhisper(base64Audio);
+      };
+
+      mediaRecorder.start(250);
     } catch (err) {
-      console.error(err);
-      setStatus("Failed to start voice", "#b91c1c");
-    }
-  }
-
-  function stopVoiceRecording() {
-    isRecordingVoice = false;
-    if (voiceButton) {
-      voiceButton.style.background = "#f3f4f6";
-      voiceButton.style.borderColor = "#d1d5db";
-      voiceButton.textContent = "🎙️";
-    }
-    setStatus("idle");
-    if (speechRecognition) {
+      console.warn("[START LOCAL AUDIO ERROR]", err);
+      setStatus("Відкрито вкладку дозволу на мікрофон!", "#ef4444");
       try {
-        speechRecognition.stop();
-      } catch (e) {}
+        chrome.runtime.sendMessage({ type: "OPEN_VOICE_PERMISSION" }).catch(() => {
+          window.open(chrome.runtime.getURL("voice-permission.html"), "_blank");
+        });
+      } catch (e) {
+        window.open(chrome.runtime.getURL("voice-permission.html"), "_blank");
+      }
     }
   }
 
-  function handleVoiceResult(text) {
-    if (!input) return;
+  async function sendAudioToWhisper(base64Audio) {
+    setStatus("⏳ Розшифровка голосу (Whisper API)...", "#b45309");
 
-    console.log("[DEBUG] Voice result:", text);
+    try {
+      const response = await new Promise((resolve) => {
+        chrome.runtime.sendMessage(
+          {
+            type: "MAKE_BACKEND_REQUEST",
+            endpoint: "http://localhost:3000/api/transcribe",
+            method: "POST",
+            payload: { audio: base64Audio },
+          },
+          (res) => resolve(res)
+        );
+      });
+
+      if (response && response.ok && response.data?.text) {
+        const transcribedText = response.data.text;
+        handleVoiceResult(transcribedText, true);
+        setStatus("Голос розпізнано", "#15803d");
+      } else {
+        const err = response?.data?.error || response?.error || "Помилка розшифровки";
+        console.error("[WHISPER ERROR]", err);
+        setStatus(`Whisper error: ${err}`, "#ef4444");
+      }
+    } catch (err) {
+      console.error("[AUDIO TRANSCRIBE ERROR]", err);
+      setStatus("Не вдалося надіслати аудіо", "#ef4444");
+    }
+  }
+
+  function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  chrome.runtime.onMessage.addListener((message) => {
+    if (message.type === "VOICE_RESULT") {
+      if (message.text) {
+        handleVoiceResult(message.text, true);
+        setStatus("Голос розпізнано", "#15803d");
+      }
+    } else if (message.type === "AUDIO_BLOB_READY") {
+      if (message.audio) {
+        sendAudioToWhisper(message.audio);
+      }
+    } else if (message.type === "VOICE_STATUS") {
+      if (message.statusText) {
+        if (message.statusText !== "idle") {
+          setStatus(message.statusText, message.isError ? "#ef4444" : "#b45309");
+        } else {
+          setStatus("idle");
+        }
+      }
+      if (typeof message.isRecording === "boolean") {
+        isRecordingAudio = message.isRecording;
+        if (voiceButton) {
+          voiceButton.style.background = message.isRecording ? "#fee2e2" : "#f3f4f6";
+          voiceButton.style.borderColor = message.isRecording ? "#ef4444" : "#d1d5db";
+          voiceButton.textContent = message.isRecording ? "🔴" : "🎙️";
+        }
+      }
+    }
+  });
+
+  let lastProcessedVoiceText = "";
+
+  function handleVoiceResult(text, isFinal = false) {
+    const input = document.getElementById("bgt-input");
+    if (!input || !text) return;
+
+    const trimmedText = String(text).trim();
+    if (!trimmedText) return;
+
+    if (trimmedText === lastProcessedVoiceText) {
+      console.log("[DEBUG] Ignoring duplicate voice result:", trimmedText);
+      return;
+    }
+
+    lastProcessedVoiceText = trimmedText;
+    setTimeout(() => {
+      if (lastProcessedVoiceText === trimmedText) {
+        lastProcessedVoiceText = "";
+      }
+    }, 4000);
+
+    console.log("[DEBUG] Voice result from Whisper:", trimmedText);
     const commandRegex = /(?:тест\s*кейс|тест|test\s*case|test)\s*(один|два|три|чотири|п['’]ять|шість|сім|вісім|дев['’]ять|десять|\d+)/iu;
-    const match = text.match(commandRegex);
+    const match = trimmedText.match(commandRegex);
 
     if (match) {
       const numWord = match[1].toLowerCase();
@@ -219,7 +382,7 @@ function initializeUiPanelListeners() {
       }
 
       const testMarker = `Test ${num}: `;
-      const cleanedText = text.replace(commandRegex, "").trim();
+      const cleanedText = trimmedText.replace(commandRegex, "").trim();
       
       const before = input.value.slice(0, input.selectionStart || 0);
       const after = input.value.slice(input.selectionEnd || 0);
@@ -232,7 +395,7 @@ function initializeUiPanelListeners() {
       const before = input.value.slice(0, input.selectionStart || 0);
       const after = input.value.slice(input.selectionEnd || 0);
       const space = before.length > 0 && !before.endsWith(" ") && !before.endsWith("\n") ? " " : "";
-      input.value = `${before}${space}${text}${after}`;
+      input.value = `${before}${space}${trimmedText}${after}`;
     }
 
     input.focus();
