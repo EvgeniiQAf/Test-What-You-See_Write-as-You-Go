@@ -1,6 +1,4 @@
-import fs from "fs";
-import path from "path";
-import os from "os";
+import { toFile } from "openai";
 import { openai } from "../config/openai";
 
 export class TranscribeService {
@@ -17,8 +15,10 @@ export class TranscribeService {
       const mime = parts[0].toLowerCase();
       if (mime.includes("mp3")) extension = "mp3";
       else if (mime.includes("wav")) extension = "wav";
-      else if (mime.includes("m4a") || mime.includes("mp4")) extension = "m4a";
-      else if (mime.includes("ogg")) extension = "ogg";
+      else if (mime.includes("mp4") || mime.includes("aac")) extension = "mp4";
+      else if (mime.includes("m4a")) extension = "m4a";
+      else if (mime.includes("ogg") || mime.includes("oga")) extension = "ogg";
+      else if (mime.includes("flac")) extension = "flac";
       else extension = "webm";
 
       audioBuffer = Buffer.from(parts[1], "base64");
@@ -30,13 +30,11 @@ export class TranscribeService {
       throw new Error("Audio buffer is empty");
     }
 
-    const tempFilePath = path.join(os.tmpdir(), `twys_voice_${Date.now()}.${extension}`);
-    await fs.promises.writeFile(tempFilePath, audioBuffer);
-
     try {
-      console.log(`[TRANSCRIBE SERVICE] Transcribing ${audioBuffer.length} bytes of audio via OpenAI Whisper-1...`);
+      console.log(`[TRANSCRIBE SERVICE] Transcribing ${audioBuffer.length} bytes of audio (${extension}) via OpenAI Whisper-1...`);
+      const file = await toFile(audioBuffer, `voice.${extension}`);
       const response = await openai.audio.transcriptions.create({
-        file: fs.createReadStream(tempFilePath),
+        file,
         model: "whisper-1",
         language: "uk",
       });
@@ -47,8 +45,6 @@ export class TranscribeService {
     } catch (error: any) {
       console.error("[TRANSCRIBE SERVICE ERROR]", error);
       throw new Error(error.message || "Failed to transcribe audio with Whisper");
-    } finally {
-      fs.promises.unlink(tempFilePath).catch(() => {});
     }
   }
 }
